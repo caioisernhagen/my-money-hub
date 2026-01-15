@@ -1,0 +1,61 @@
+export type TransactionType = 'Receita' | 'Despesa';
+
+export type AccountType = 'Corrente' | 'Poupança' | 'Investimento' | 'Carteira' | 'Outro';
+
+export interface Account {
+  id: string;
+  nome: string;
+  tipo: AccountType;
+  saldo_inicial: number;
+  ativo: boolean;
+  saldo_atual?: number;
+}
+
+export interface Category {
+  id: string;
+  nome: string;
+  tipo: TransactionType;
+  cor: string;
+}
+
+export interface Transaction {
+  id: string;
+  descricao: string;
+  valor: number;
+  data: string;
+  tipo: TransactionType;
+  conta_id: string;
+  categoria_id: string;
+  pago: boolean;
+  cartao: boolean;
+}
+
+export interface CreditCard {
+  id: string;
+  descricao: string;
+  data_vencimento: number;
+  data_fechamento: number;
+}
+
+export interface TransactionFilters {
+  dataInicio?: string;
+  dataFim?: string;
+  conta_id?: string;
+  categoria_id?: string;
+  tipo?: TransactionType;
+  pago?: boolean;
+  cartao?: boolean;
+}
+
+export interface MonthlyData {
+  mes: string;
+  receitas: number;
+  despesas: number;
+}
+
+export interface CategoryExpense {
+  categoria: string;
+  cor: string;
+  valor: number;
+  percentual: number;
+}

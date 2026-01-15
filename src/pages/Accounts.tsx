@@ -1,0 +1,259 @@
+import { useState } from 'react';
+import { MainLayout } from '@/components/layout/MainLayout';
+import { useFinance } from '@/contexts/FinanceContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { 
+  Plus, 
+  Pencil, 
+  Trash2, 
+  Wallet, 
+  TrendingUp, 
+  PiggyBank, 
+  Landmark, 
+  DollarSign,
+  AlertCircle
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Account, AccountType } from '@/types/finance';
+import { toast } from 'sonner';
+
+const accountTypes: AccountType[] = ['Corrente', 'Poupança', 'Investimento', 'Carteira', 'Outro'];
+
+const accountIcons = {
+  Corrente: Landmark,
+  Poupança: PiggyBank,
+  Investimento: TrendingUp,
+  Carteira: Wallet,
+  Outro: DollarSign,
+};
+
+export default function Accounts() {
+  const { accounts, addAccount, updateAccount, deleteAccount, getAccountBalance } = useFinance();
+  const [isOpen, setIsOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [formData, setFormData] = useState({
+    nome: '',
+    tipo: 'Corrente' as AccountType,
+    saldo_inicial: '',
+    ativo: true,
+  });
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
+
+  const resetForm = () => {
+    setFormData({ nome: '', tipo: 'Corrente', saldo_inicial: '', ativo: true });
+    setEditingAccount(null);
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    if (!open) resetForm();
+  };
+
+  const handleEdit = (account: Account) => {
+    setEditingAccount(account);
+    setFormData({
+      nome: account.nome,
+      tipo: account.tipo,
+      saldo_inicial: account.saldo_inicial.toString(),
+      ativo: account.ativo,
+    });
+    setIsOpen(true);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const accountData = {
+      nome: formData.nome,
+      tipo: formData.tipo,
+      saldo_inicial: parseFloat(formData.saldo_inicial) || 0,
+      ativo: formData.ativo,
+    };
+
+    if (editingAccount) {
+      updateAccount(editingAccount.id, accountData);
+      toast.success('Conta atualizada com sucesso!');
+    } else {
+      addAccount(accountData);
+      toast.success('Conta criada com sucesso!');
+    }
+
+    handleOpenChange(false);
+  };
+
+  const handleDelete = (account: Account) => {
+    const success = deleteAccount(account.id);
+    if (success) {
+      toast.success('Conta excluída com sucesso!');
+    } else {
+      toast.error('Não é possível excluir uma conta com lançamentos associados');
+    }
+  };
+
+  return (
+    <MainLayout title="Contas" subtitle="Gerencie suas contas bancárias e carteiras">
+      <div className="flex justify-end mb-6">
+        <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+          <DialogTrigger asChild>
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" />
+              Nova Conta
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle className="font-display">
+                {editingAccount ? 'Editar Conta' : 'Nova Conta'}
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <Label htmlFor="nome">Nome da Conta</Label>
+                <Input
+                  id="nome"
+                  value={formData.nome}
+                  onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                  placeholder="Ex: Conta Corrente Itaú"
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="tipo">Tipo</Label>
+                <Select
+                  value={formData.tipo}
+                  onValueChange={(value: AccountType) => setFormData({ ...formData, tipo: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {accountTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="saldo_inicial">Saldo Inicial</Label>
+                <Input
+                  id="saldo_inicial"
+                  type="number"
+                  step="0.01"
+                  value={formData.saldo_inicial}
+                  onChange={(e) => setFormData({ ...formData, saldo_inicial: e.target.value })}
+                  placeholder="0,00"
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Label htmlFor="ativo">Conta Ativa</Label>
+                <Switch
+                  id="ativo"
+                  checked={formData.ativo}
+                  onCheckedChange={(checked) => setFormData({ ...formData, ativo: checked })}
+                />
+              </div>
+
+              <Button type="submit" className="w-full">
+                {editingAccount ? 'Salvar Alterações' : 'Criar Conta'}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-20 lg:pb-0">
+        {accounts.map((account) => {
+          const balance = getAccountBalance(account.id);
+          const Icon = accountIcons[account.tipo] || Wallet;
+
+          return (
+            <div
+              key={account.id}
+              className={cn(
+                "stat-card relative",
+                !account.ativo && "opacity-60"
+              )}
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                  <Icon className="h-6 w-6 text-primary" />
+                </div>
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => handleEdit(account)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    onClick={() => handleDelete(account)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <h3 className="font-semibold text-foreground mb-1">{account.nome}</h3>
+              <p className="text-sm text-muted-foreground mb-4">{account.tipo}</p>
+
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Saldo Inicial:</span>
+                  <span className="font-medium">{formatCurrency(account.saldo_inicial)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Saldo Atual:</span>
+                  <span className={cn(
+                    "font-display font-bold text-lg",
+                    balance >= 0 ? 'text-income' : 'text-expense'
+                  )}>
+                    {formatCurrency(balance)}
+                  </span>
+                </div>
+              </div>
+
+              {!account.ativo && (
+                <div className="absolute top-3 right-16 px-2 py-1 rounded text-xs bg-muted text-muted-foreground">
+                  Inativa
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </MainLayout>
+  );
+}
