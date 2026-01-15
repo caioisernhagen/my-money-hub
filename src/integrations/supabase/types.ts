@@ -14,16 +14,193 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      accounts: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+          saldo_inicial: number
+          tipo: Database["public"]["Enums"]["account_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+          saldo_inicial?: number
+          tipo?: Database["public"]["Enums"]["account_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          saldo_inicial?: number
+          tipo?: Database["public"]["Enums"]["account_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      categories: {
+        Row: {
+          cor: string
+          created_at: string
+          id: string
+          nome: string
+          tipo: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cor?: string
+          created_at?: string
+          id?: string
+          nome: string
+          tipo: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cor?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          tipo?: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      credit_cards: {
+        Row: {
+          created_at: string
+          data_fechamento: number
+          data_vencimento: number
+          descricao: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_fechamento: number
+          data_vencimento: number
+          descricao: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data_fechamento?: number
+          data_vencimento?: number
+          descricao?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          cartao: boolean
+          cartao_id: string | null
+          categoria_id: string
+          conta_id: string
+          created_at: string
+          data: string
+          descricao: string
+          id: string
+          pago: boolean
+          tipo: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string
+          user_id: string
+          valor: number
+        }
+        Insert: {
+          cartao?: boolean
+          cartao_id?: string | null
+          categoria_id: string
+          conta_id: string
+          created_at?: string
+          data?: string
+          descricao: string
+          id?: string
+          pago?: boolean
+          tipo: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
+          user_id: string
+          valor: number
+        }
+        Update: {
+          cartao?: boolean
+          cartao_id?: string | null
+          categoria_id?: string
+          conta_id?: string
+          created_at?: string
+          data?: string
+          descricao?: string
+          id?: string
+          pago?: boolean
+          tipo?: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
+          user_id?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_cartao_id_fkey"
+            columns: ["cartao_id"]
+            isOneToOne: false
+            referencedRelation: "credit_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      account_has_transactions: {
+        Args: { account_id: string }
+        Returns: boolean
+      }
+      category_has_transactions: {
+        Args: { category_id: string }
+        Returns: boolean
+      }
+      user_owns_account: { Args: { account_id: string }; Returns: boolean }
+      user_owns_category: { Args: { category_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      account_type:
+        | "Corrente"
+        | "Poupança"
+        | "Investimento"
+        | "Carteira"
+        | "Outro"
+      transaction_type: "Receita" | "Despesa"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +327,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      account_type: [
+        "Corrente",
+        "Poupança",
+        "Investimento",
+        "Carteira",
+        "Outro",
+      ],
+      transaction_type: ["Receita", "Despesa"],
+    },
   },
 } as const
