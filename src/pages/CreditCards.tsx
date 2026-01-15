@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { useCreditCards } from '@/hooks/useCreditCards';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
@@ -10,17 +12,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Plus, Pencil, Trash2, CreditCard as CardIcon, Calendar } from 'lucide-react';
+import { Plus, Pencil, Trash2, CreditCard as CardIcon, Calendar, Loader2 } from 'lucide-react';
 import { CreditCard } from '@/types/finance';
 import { toast } from 'sonner';
 
 export default function CreditCards() {
-  const [cards, setCards] = useState<CreditCard[]>([
-    { id: '1', descricao: 'Nubank', data_vencimento: 15, data_fechamento: 8 },
-    { id: '2', descricao: 'Itaú Platinum', data_vencimento: 20, data_fechamento: 13 },
-  ]);
+  const { creditCards, loading, addCreditCard, updateCreditCard, deleteCreditCard } = useCreditCards();
   
   const [isOpen, setIsOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingCard, setEditingCard] = useState<CreditCard | null>(null);
   const [formData, setFormData] = useState({
     descricao: '',
@@ -48,8 +48,9 @@ export default function CreditCards() {
     setIsOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     
     const cardData = {
       descricao: formData.descricao,
@@ -58,22 +59,40 @@ export default function CreditCards() {
     };
 
     if (editingCard) {
-      setCards(prev => prev.map(c => 
-        c.id === editingCard.id ? { ...c, ...cardData } : c
-      ));
-      toast.success('Cartão atualizado com sucesso!');
+      const success = await updateCreditCard(editingCard.id, cardData);
+      if (success) {
+        toast.success('Cartão atualizado com sucesso!');
+        handleOpenChange(false);
+      }
     } else {
-      setCards(prev => [...prev, { ...cardData, id: Date.now().toString() }]);
-      toast.success('Cartão criado com sucesso!');
+      const result = await addCreditCard(cardData);
+      if (result) {
+        toast.success('Cartão criado com sucesso!');
+        handleOpenChange(false);
+      }
     }
 
-    handleOpenChange(false);
+    setIsSubmitting(false);
   };
 
-  const handleDelete = (id: string) => {
-    setCards(prev => prev.filter(c => c.id !== id));
-    toast.success('Cartão excluído com sucesso!');
+  const handleDelete = async (id: string) => {
+    const success = await deleteCreditCard(id);
+    if (success) {
+      toast.success('Cartão excluído com sucesso!');
+    }
   };
+
+  if (loading) {
+    return (
+      <MainLayout title="Cartões de Crédito" subtitle="Gerencie seus cartões de crédito">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-20 lg:pb-0">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-48 rounded-xl" />
+          ))}
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout title="Cartões de Crédito" subtitle="Gerencie seus cartões de crédito">
@@ -132,62 +151,77 @@ export default function CreditCards() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full">
-                {editingCard ? 'Salvar Alterações' : 'Criar Cartão'}
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  editingCard ? 'Salvar Alterações' : 'Criar Cartão'
+                )}
               </Button>
             </form>
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-20 lg:pb-0">
-        {cards.map((card) => (
-          <div key={card.id} className="stat-card">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-chart-1 to-chart-5">
-                <CardIcon className="h-6 w-6 text-white" />
+      {creditCards.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <CardIcon className="h-16 w-16 text-muted-foreground/50 mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">Nenhum cartão cadastrado</h3>
+          <p className="text-muted-foreground mb-4">Comece adicionando seu primeiro cartão</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-20 lg:pb-0">
+          {creditCards.map((card) => (
+            <div key={card.id} className="stat-card">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-chart-1 to-chart-5">
+                  <CardIcon className="h-6 w-6 text-white" />
+                </div>
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => handleEdit(card)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    onClick={() => handleDelete(card.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-              <div className="flex gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => handleEdit(card)}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-destructive hover:text-destructive"
-                  onClick={() => handleDelete(card.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+
+              <h3 className="font-semibold text-foreground text-lg mb-4">{card.descricao}</h3>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Fechamento</span>
+                  </div>
+                  <span className="font-semibold">Dia {card.data_fechamento}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Vencimento</span>
+                  </div>
+                  <span className="font-semibold">Dia {card.data_vencimento}</span>
+                </div>
               </div>
             </div>
-
-            <h3 className="font-semibold text-foreground text-lg mb-4">{card.descricao}</h3>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Fechamento</span>
-                </div>
-                <span className="font-semibold">Dia {card.data_fechamento}</span>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Vencimento</span>
-                </div>
-                <span className="font-semibold">Dia {card.data_vencimento}</span>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </MainLayout>
   );
 }

@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Plus, 
   Pencil, 
@@ -28,7 +29,7 @@ import {
   PiggyBank, 
   Landmark, 
   DollarSign,
-  AlertCircle
+  Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Account, AccountType } from '@/types/finance';
@@ -45,8 +46,9 @@ const accountIcons = {
 };
 
 export default function Accounts() {
-  const { accounts, addAccount, updateAccount, deleteAccount, getAccountBalance } = useFinance();
+  const { accounts, addAccount, updateAccount, deleteAccount, getAccountBalance, loading } = useFinance();
   const [isOpen, setIsOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [formData, setFormData] = useState({
     nome: '',
@@ -83,8 +85,9 @@ export default function Accounts() {
     setIsOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     
     const accountData = {
       nome: formData.nome,
@@ -94,24 +97,40 @@ export default function Accounts() {
     };
 
     if (editingAccount) {
-      updateAccount(editingAccount.id, accountData);
-      toast.success('Conta atualizada com sucesso!');
+      const success = await updateAccount(editingAccount.id, accountData);
+      if (success) {
+        toast.success('Conta atualizada com sucesso!');
+        handleOpenChange(false);
+      }
     } else {
-      addAccount(accountData);
-      toast.success('Conta criada com sucesso!');
+      const result = await addAccount(accountData);
+      if (result) {
+        toast.success('Conta criada com sucesso!');
+        handleOpenChange(false);
+      }
     }
 
-    handleOpenChange(false);
+    setIsSubmitting(false);
   };
 
-  const handleDelete = (account: Account) => {
-    const success = deleteAccount(account.id);
+  const handleDelete = async (account: Account) => {
+    const success = await deleteAccount(account.id);
     if (success) {
       toast.success('Conta excluída com sucesso!');
-    } else {
-      toast.error('Não é possível excluir uma conta com lançamentos associados');
     }
   };
+
+  if (loading) {
+    return (
+      <MainLayout title="Contas" subtitle="Gerencie suas contas bancárias e carteiras">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-20 lg:pb-0">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-48 rounded-xl" />
+          ))}
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout title="Contas" subtitle="Gerencie suas contas bancárias e carteiras">
@@ -181,79 +200,94 @@ export default function Accounts() {
                 />
               </div>
 
-              <Button type="submit" className="w-full">
-                {editingAccount ? 'Salvar Alterações' : 'Criar Conta'}
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  editingAccount ? 'Salvar Alterações' : 'Criar Conta'
+                )}
               </Button>
             </form>
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-20 lg:pb-0">
-        {accounts.map((account) => {
-          const balance = getAccountBalance(account.id);
-          const Icon = accountIcons[account.tipo] || Wallet;
+      {accounts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <Wallet className="h-16 w-16 text-muted-foreground/50 mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">Nenhuma conta cadastrada</h3>
+          <p className="text-muted-foreground mb-4">Comece adicionando sua primeira conta</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-20 lg:pb-0">
+          {accounts.map((account) => {
+            const balance = getAccountBalance(account.id);
+            const Icon = accountIcons[account.tipo] || Wallet;
 
-          return (
-            <div
-              key={account.id}
-              className={cn(
-                "stat-card relative",
-                !account.ativo && "opacity-60"
-              )}
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                  <Icon className="h-6 w-6 text-primary" />
+            return (
+              <div
+                key={account.id}
+                className={cn(
+                  "stat-card relative",
+                  !account.ativo && "opacity-60"
+                )}
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                    <Icon className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => handleEdit(account)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={() => handleDelete(account)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => handleEdit(account)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-destructive hover:text-destructive"
-                    onClick={() => handleDelete(account)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+
+                <h3 className="font-semibold text-foreground mb-1">{account.nome}</h3>
+                <p className="text-sm text-muted-foreground mb-4">{account.tipo}</p>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Saldo Inicial:</span>
+                    <span className="font-medium">{formatCurrency(account.saldo_inicial)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Saldo Atual:</span>
+                    <span className={cn(
+                      "font-display font-bold text-lg",
+                      balance >= 0 ? 'text-income' : 'text-expense'
+                    )}>
+                      {formatCurrency(balance)}
+                    </span>
+                  </div>
                 </div>
+
+                {!account.ativo && (
+                  <div className="absolute top-3 right-16 px-2 py-1 rounded text-xs bg-muted text-muted-foreground">
+                    Inativa
+                  </div>
+                )}
               </div>
-
-              <h3 className="font-semibold text-foreground mb-1">{account.nome}</h3>
-              <p className="text-sm text-muted-foreground mb-4">{account.tipo}</p>
-
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Saldo Inicial:</span>
-                  <span className="font-medium">{formatCurrency(account.saldo_inicial)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Saldo Atual:</span>
-                  <span className={cn(
-                    "font-display font-bold text-lg",
-                    balance >= 0 ? 'text-income' : 'text-expense'
-                  )}>
-                    {formatCurrency(balance)}
-                  </span>
-                </div>
-              </div>
-
-              {!account.ativo && (
-                <div className="absolute top-3 right-16 px-2 py-1 rounded text-xs bg-muted text-muted-foreground">
-                  Inativa
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </MainLayout>
   );
 }

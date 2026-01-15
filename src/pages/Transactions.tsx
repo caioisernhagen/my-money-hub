@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
@@ -29,7 +30,9 @@ import {
   X,
   ArrowUpRight,
   ArrowDownRight,
-  Calendar
+  Calendar,
+  Loader2,
+  Receipt
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Transaction, TransactionType, TransactionFilters } from '@/types/finance';
@@ -40,6 +43,7 @@ export default function Transactions() {
     transactions, 
     categories, 
     accounts, 
+    loading,
     addTransaction, 
     updateTransaction, 
     deleteTransaction,
@@ -50,6 +54,7 @@ export default function Transactions() {
 
   const [isOpen, setIsOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   
   const [filters, setFilters] = useState<TransactionFilters>({});
@@ -119,8 +124,9 @@ export default function Transactions() {
     setIsOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     
     const transactionData = {
       descricao: formData.descricao,
@@ -134,19 +140,27 @@ export default function Transactions() {
     };
 
     if (editingTransaction) {
-      updateTransaction(editingTransaction.id, transactionData);
-      toast.success('Lançamento atualizado com sucesso!');
+      const success = await updateTransaction(editingTransaction.id, transactionData);
+      if (success) {
+        toast.success('Lançamento atualizado com sucesso!');
+        handleOpenChange(false);
+      }
     } else {
-      addTransaction(transactionData);
-      toast.success('Lançamento criado com sucesso!');
+      const result = await addTransaction(transactionData);
+      if (result) {
+        toast.success('Lançamento criado com sucesso!');
+        handleOpenChange(false);
+      }
     }
 
-    handleOpenChange(false);
+    setIsSubmitting(false);
   };
 
-  const handleDelete = (id: string) => {
-    deleteTransaction(id);
-    toast.success('Lançamento excluído com sucesso!');
+  const handleDelete = async (id: string) => {
+    const success = await deleteTransaction(id);
+    if (success) {
+      toast.success('Lançamento excluído com sucesso!');
+    }
   };
 
   const clearFilters = () => {
@@ -154,6 +168,21 @@ export default function Transactions() {
   };
 
   const hasActiveFilters = Object.values(filters).some(v => v !== undefined && v !== '');
+
+  if (loading) {
+    return (
+      <MainLayout title="Lançamentos" subtitle="Registre e gerencie suas transações financeiras">
+        <div className="stat-card pb-20 lg:pb-0">
+          <Skeleton className="h-6 w-48 mb-4" />
+          <div className="space-y-2">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Skeleton key={i} className="h-20 rounded-lg" />
+            ))}
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout title="Lançamentos" subtitle="Registre e gerencie suas transações financeiras">
@@ -448,8 +477,15 @@ export default function Transactions() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full">
-                {editingTransaction ? 'Salvar Alterações' : 'Criar Lançamento'}
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  editingTransaction ? 'Salvar Alterações' : 'Criar Lançamento'
+                )}
               </Button>
             </form>
           </DialogContent>
@@ -457,125 +493,127 @@ export default function Transactions() {
       </div>
 
       {/* Transactions List */}
-      <div className="stat-card pb-20 lg:pb-0">
-        <div className="text-sm text-muted-foreground mb-4">
-          {filteredTransactions.length} lançamento(s) encontrado(s)
+      {transactions.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <Receipt className="h-16 w-16 text-muted-foreground/50 mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">Nenhum lançamento cadastrado</h3>
+          <p className="text-muted-foreground mb-4">Comece adicionando seu primeiro lançamento</p>
         </div>
+      ) : (
+        <div className="stat-card pb-20 lg:pb-0">
+          <div className="text-sm text-muted-foreground mb-4">
+            {filteredTransactions.length} lançamento(s) encontrado(s)
+          </div>
 
-        <div className="space-y-2">
-          {filteredTransactions.map((transaction) => {
-            const category = categories.find(c => c.id === transaction.categoria_id);
-            const account = accounts.find(a => a.id === transaction.conta_id);
-            const isIncome = transaction.tipo === 'Receita';
-            
-            return (
-              <div
-                key={transaction.id}
-                className="flex items-center justify-between p-4 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors"
-              >
-                <div className="flex items-center gap-4 flex-1">
-                  {/* Icon */}
-                  <div 
-                    className="flex h-10 w-10 items-center justify-center rounded-full shrink-0"
-                    style={{ backgroundColor: `${category?.cor}20` }}
-                  >
-                    {isIncome ? (
-                      <ArrowUpRight className="h-5 w-5 text-income" />
-                    ) : (
-                      <ArrowDownRight className="h-5 w-5 text-expense" />
-                    )}
+          <div className="space-y-2">
+            {filteredTransactions.map((transaction) => {
+              const category = categories.find(c => c.id === transaction.categoria_id);
+              const account = accounts.find(a => a.id === transaction.conta_id);
+              const isIncome = transaction.tipo === 'Receita';
+              
+              return (
+                <div
+                  key={transaction.id}
+                  className="flex items-center justify-between p-4 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={cn(
+                      "flex h-10 w-10 items-center justify-center rounded-lg",
+                      isIncome ? 'bg-income/10' : 'bg-expense/10'
+                    )}>
+                      {isIncome ? (
+                        <ArrowUpRight className="h-5 w-5 text-income" />
+                      ) : (
+                        <ArrowDownRight className="h-5 w-5 text-expense" />
+                      )}
+                    </div>
+                    
+                    <div>
+                      <p className="font-medium text-foreground">{transaction.descricao}</p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        {category && (
+                          <div className="flex items-center gap-1">
+                            <div 
+                              className="w-2 h-2 rounded-full" 
+                              style={{ backgroundColor: category.cor }}
+                            />
+                            <span>{category.nome}</span>
+                          </div>
+                        )}
+                        <span>•</span>
+                        <span>{account?.nome}</span>
+                        <span>•</span>
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          <span>{formatDate(transaction.data)}</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-foreground truncate">{transaction.descricao}</p>
-                    <div className="flex flex-wrap items-center gap-2 mt-1">
-                      <span 
-                        className="text-xs px-2 py-0.5 rounded-full"
-                        style={{ 
-                          backgroundColor: `${category?.cor}15`,
-                          color: category?.cor
-                        }}
+                  <div className="flex items-center gap-3">
+                    {/* Status badges */}
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => togglePago(transaction.id)}
+                        className={cn(
+                          "flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors",
+                          transaction.pago 
+                            ? 'bg-income/10 text-income hover:bg-income/20' 
+                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                        )}
                       >
-                        {category?.nome}
-                      </span>
-                      <span className="text-xs text-muted-foreground">{account?.nome}</span>
-                      <span className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {formatDate(transaction.data)}
-                      </span>
+                        {transaction.pago ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
+                        {transaction.pago ? 'Pago' : 'Pendente'}
+                      </button>
+                      
+                      <button
+                        onClick={() => toggleCartao(transaction.id)}
+                        className={cn(
+                          "flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors",
+                          transaction.cartao 
+                            ? 'bg-chart-1/10 text-chart-1 hover:bg-chart-1/20' 
+                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                        )}
+                      >
+                        <CreditCard className="h-3 w-3" />
+                      </button>
+                    </div>
+
+                    {/* Value */}
+                    <span className={cn(
+                      "font-display font-semibold min-w-[100px] text-right",
+                      isIncome ? 'text-income' : 'text-expense'
+                    )}>
+                      {isIncome ? '+' : '-'} {formatCurrency(transaction.valor)}
+                    </span>
+
+                    {/* Actions */}
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleEdit(transaction)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={() => handleDelete(transaction.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 </div>
-
-                {/* Status Buttons */}
-                <div className="flex items-center gap-2 mx-4">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      "h-8 w-8 rounded-full",
-                      transaction.pago ? "bg-income/20 text-income" : "bg-muted text-muted-foreground"
-                    )}
-                    onClick={() => togglePago(transaction.id)}
-                    title={transaction.pago ? 'Pago' : 'Pendente'}
-                  >
-                    <Check className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      "h-8 w-8 rounded-full",
-                      transaction.cartao ? "bg-chart-1/20 text-chart-1" : "bg-muted text-muted-foreground"
-                    )}
-                    onClick={() => toggleCartao(transaction.id)}
-                    title={transaction.cartao ? 'Cartão' : 'Outros'}
-                  >
-                    <CreditCard className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                {/* Value */}
-                <div className="text-right mr-4">
-                  <p className={cn(
-                    "font-display font-bold",
-                    isIncome ? 'text-income' : 'text-expense'
-                  )}>
-                    {isIncome ? '+' : '-'}{formatCurrency(transaction.valor)}
-                  </p>
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => handleEdit(transaction)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-destructive hover:text-destructive"
-                    onClick={() => handleDelete(transaction.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
-
-          {filteredTransactions.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground">
-              Nenhum lançamento encontrado
-            </div>
-          )}
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
     </MainLayout>
   );
 }
