@@ -3,12 +3,15 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { FinanceProvider } from "@/contexts/FinanceContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import Accounts from "./pages/Accounts";
 import Categories from "./pages/Categories";
 import Transactions from "./pages/Transactions";
 import CreditCards from "./pages/CreditCards";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -16,20 +19,51 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <FinanceProvider>
-        <Toaster />
-        <Sonner />
+      <AuthProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/contas" element={<Accounts />} />
-            <Route path="/categorias" element={<Categories />} />
-            <Route path="/lancamentos" element={<Transactions />} />
-            <Route path="/cartoes" element={<CreditCards />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/" element={
+              <ProtectedRoute>
+                <FinanceProvider>
+                  <Dashboard />
+                </FinanceProvider>
+              </ProtectedRoute>
+            } />
+            <Route path="/contas" element={
+              <ProtectedRoute>
+                <FinanceProvider>
+                  <Accounts />
+                </FinanceProvider>
+              </ProtectedRoute>
+            } />
+            <Route path="/categorias" element={
+              <ProtectedRoute>
+                <FinanceProvider>
+                  <Categories />
+                </FinanceProvider>
+              </ProtectedRoute>
+            } />
+            <Route path="/lancamentos" element={
+              <ProtectedRoute>
+                <FinanceProvider>
+                  <Transactions />
+                </FinanceProvider>
+              </ProtectedRoute>
+            } />
+            <Route path="/cartoes" element={
+              <ProtectedRoute>
+                <FinanceProvider>
+                  <CreditCards />
+                </FinanceProvider>
+              </ProtectedRoute>
+            } />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
-      </FinanceProvider>
+        <Toaster />
+        <Sonner />
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

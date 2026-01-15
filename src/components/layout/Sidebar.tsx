@@ -5,9 +5,12 @@ import {
   Tag, 
   Receipt, 
   CreditCard,
-  TrendingUp
+  TrendingUp,
+  LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -18,6 +21,8 @@ const navItems = [
 ];
 
 export function Sidebar() {
+  const { signOut, user } = useAuth();
+
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-sidebar border-r border-sidebar-border">
       <div className="flex h-full flex-col">
@@ -52,13 +57,18 @@ export function Sidebar() {
         </nav>
 
         {/* Footer */}
-        <div className="px-4 py-4 border-t border-sidebar-border">
-          <div className="rounded-lg bg-sidebar-accent p-4">
-            <p className="text-xs text-sidebar-foreground/70 mb-2">Saldo Total</p>
-            <p className="text-lg font-bold font-display text-sidebar-foreground">
-              R$ 45.500,00
-            </p>
+        <div className="px-4 py-4 border-t border-sidebar-border space-y-3">
+          <div className="text-xs text-sidebar-foreground/60 truncate px-1">
+            {user?.email}
           </div>
+          <Button 
+            variant="outline" 
+            className="w-full gap-2" 
+            onClick={() => signOut()}
+          >
+            <LogOut className="h-4 w-4" />
+            Sair
+          </Button>
         </div>
       </div>
     </aside>
