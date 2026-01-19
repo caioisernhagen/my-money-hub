@@ -10,6 +10,7 @@ interface DbCreditCard {
   descricao: string;
   data_vencimento: number;
   data_fechamento: number;
+  limite: number;
   created_at: string;
   updated_at: string;
 }
@@ -37,6 +38,7 @@ export function useCreditCards() {
         descricao: card.descricao,
         data_vencimento: card.data_vencimento,
         data_fechamento: card.data_fechamento,
+        limite: Number(card.limite),
       })));
     }
     setLoading(false);
@@ -56,6 +58,7 @@ export function useCreditCards() {
         descricao: card.descricao,
         data_vencimento: card.data_vencimento,
         data_fechamento: card.data_fechamento,
+        limite: card.limite,
       })
       .select()
       .single();
@@ -71,6 +74,7 @@ export function useCreditCards() {
       descricao: data.descricao,
       data_vencimento: data.data_vencimento,
       data_fechamento: data.data_fechamento,
+      limite: Number(data.limite),
     };
     
     setCreditCards(prev => [...prev, newCard]);

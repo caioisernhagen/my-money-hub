@@ -1,23 +1,28 @@
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { RevenueExpenseChart } from '@/components/dashboard/RevenueExpenseChart';
 import { CategoryPieChart } from '@/components/dashboard/CategoryPieChart';
 import { AccountsTable } from '@/components/dashboard/AccountsTable';
 import { RecentTransactions } from '@/components/dashboard/RecentTransactions';
+import { BalanceProjectionChart } from '@/components/dashboard/BalanceProjectionChart';
+import { MonthSelector } from '@/components/dashboard/MonthSelector';
 import { useFinance } from '@/contexts/FinanceContext';
 import { TrendingUp, TrendingDown, Wallet, Receipt } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, isSameMonth } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export default function Dashboard() {
   const { transactions, accounts, getAccountBalance } = useFinance();
-
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   const stats = useMemo(() => {
+    const monthStart = startOfMonth(selectedDate);
+    const monthEnd = endOfMonth(selectedDate);
+
     const monthlyTransactions = transactions.filter(t => {
       const date = new Date(t.data);
-      return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+      return date >= monthStart && date <= monthEnd;
     });
 
     const receitas = monthlyTransactions
@@ -39,7 +44,7 @@ export default function Dashboard() {
       .reduce((sum, t) => sum + t.valor, 0);
 
     return { receitas, despesas, saldo, totalBalance, pendentes };
-  }, [transactions, accounts, getAccountBalance, currentMonth, currentYear]);
+  }, [transactions, accounts, getAccountBalance, selectedDate]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -48,12 +53,20 @@ export default function Dashboard() {
     }).format(value);
   };
 
-  const monthName = new Date().toLocaleDateString('pt-BR', { month: 'long' });
+  const monthName = format(selectedDate, 'MMMM', { locale: ptBR });
+  const year = selectedDate.getFullYear();
+  const isCurrentMonth = isSameMonth(selectedDate, new Date());
 
   return (
     <MainLayout 
       title="Dashboard" 
-      subtitle={`Visão geral de ${monthName} de ${currentYear}`}
+      subtitle={`Visão geral de ${monthName} de ${year}`}
+      headerActions={
+        <MonthSelector 
+          selectedDate={selectedDate} 
+          onDateChange={setSelectedDate} 
+        />
+      }
     >
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -87,12 +100,17 @@ export default function Dashboard() {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <RevenueExpenseChart />
-        <CategoryPieChart />
+        <BalanceProjectionChart />
       </div>
 
       {/* Bottom Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-20 lg:pb-0">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <CategoryPieChart />
         <AccountsTable />
+      </div>
+
+      {/* Recent Transactions */}
+      <div className="pb-20 lg:pb-0">
         <RecentTransactions />
       </div>
     </MainLayout>

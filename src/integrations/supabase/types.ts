@@ -84,6 +84,7 @@ export type Database = {
           data_vencimento: number
           descricao: string
           id: string
+          limite: number
           updated_at: string
           user_id: string
         }
@@ -93,6 +94,7 @@ export type Database = {
           data_vencimento: number
           descricao: string
           id?: string
+          limite?: number
           updated_at?: string
           user_id: string
         }
@@ -102,6 +104,7 @@ export type Database = {
           data_vencimento?: number
           descricao?: string
           id?: string
+          limite?: number
           updated_at?: string
           user_id?: string
         }
@@ -116,6 +119,7 @@ export type Database = {
           created_at: string
           data: string
           descricao: string
+          fatura_data: string | null
           id: string
           pago: boolean
           tipo: Database["public"]["Enums"]["transaction_type"]
@@ -131,6 +135,7 @@ export type Database = {
           created_at?: string
           data?: string
           descricao: string
+          fatura_data?: string | null
           id?: string
           pago?: boolean
           tipo: Database["public"]["Enums"]["transaction_type"]
@@ -146,6 +151,7 @@ export type Database = {
           created_at?: string
           data?: string
           descricao?: string
+          fatura_data?: string | null
           id?: string
           pago?: boolean
           tipo?: Database["public"]["Enums"]["transaction_type"]

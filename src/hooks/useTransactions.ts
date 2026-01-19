@@ -16,6 +16,7 @@ interface DbTransaction {
   pago: boolean;
   cartao: boolean;
   cartao_id: string | null;
+  fatura_data: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -48,6 +49,8 @@ export function useTransactions() {
         categoria_id: t.categoria_id,
         pago: t.pago,
         cartao: t.cartao,
+        cartao_id: t.cartao_id,
+        fatura_data: t.fatura_data,
       })));
     }
     setLoading(false);
@@ -72,6 +75,8 @@ export function useTransactions() {
         categoria_id: transaction.categoria_id,
         pago: transaction.pago,
         cartao: transaction.cartao,
+        cartao_id: transaction.cartao_id || null,
+        fatura_data: transaction.fatura_data || null,
       })
       .select()
       .single();
@@ -92,6 +97,8 @@ export function useTransactions() {
       categoria_id: data.categoria_id,
       pago: data.pago,
       cartao: data.cartao,
+      cartao_id: data.cartao_id,
+      fatura_data: data.fatura_data,
     };
     
     setTransactions(prev => [newTransaction, ...prev]);

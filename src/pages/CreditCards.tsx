@@ -26,10 +26,11 @@ export default function CreditCards() {
     descricao: '',
     data_vencimento: '',
     data_fechamento: '',
+    limite: '',
   });
 
   const resetForm = () => {
-    setFormData({ descricao: '', data_vencimento: '', data_fechamento: '' });
+    setFormData({ descricao: '', data_vencimento: '', data_fechamento: '', limite: '' });
     setEditingCard(null);
   };
 
@@ -44,6 +45,7 @@ export default function CreditCards() {
       descricao: card.descricao,
       data_vencimento: card.data_vencimento.toString(),
       data_fechamento: card.data_fechamento.toString(),
+      limite: card.limite.toString(),
     });
     setIsOpen(true);
   };
@@ -56,6 +58,7 @@ export default function CreditCards() {
       descricao: formData.descricao,
       data_vencimento: parseInt(formData.data_vencimento) || 1,
       data_fechamento: parseInt(formData.data_fechamento) || 1,
+      limite: parseFloat(formData.limite) || 0,
     };
 
     if (editingCard) {
@@ -151,6 +154,19 @@ export default function CreditCards() {
                 </div>
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="limite">Limite / Fatura Atual (R$)</Label>
+                <Input
+                  id="limite"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.limite}
+                  onChange={(e) => setFormData({ ...formData, limite: e.target.value })}
+                  placeholder="5000,00"
+                />
+              </div>
+
               <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? (
                   <>
@@ -203,6 +219,15 @@ export default function CreditCards() {
               <h3 className="font-semibold text-foreground text-lg mb-4">{card.descricao}</h3>
 
               <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10">
+                  <div className="flex items-center gap-2">
+                    <CardIcon className="h-4 w-4 text-primary" />
+                    <span className="text-sm text-muted-foreground">Limite/Fatura</span>
+                  </div>
+                  <span className="font-display font-semibold text-primary">
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(card.limite)}
+                  </span>
+                </div>
                 <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
