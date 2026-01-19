@@ -28,6 +28,8 @@ export interface Transaction {
   categoria_id: string;
   pago: boolean;
   cartao: boolean;
+  cartao_id?: string | null;
+  fatura_data?: string | null;
 }
 
 export interface CreditCard {
@@ -35,6 +37,7 @@ export interface CreditCard {
   descricao: string;
   data_vencimento: number;
   data_fechamento: number;
+  limite: number;
 }
 
 export interface TransactionFilters {

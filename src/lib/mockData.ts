@@ -63,8 +63,8 @@ export const mockTransactions: Transaction[] = [
 ];
 
 export const mockCreditCards: CreditCard[] = [
-  { id: '1', descricao: 'Nubank', data_vencimento: 15, data_fechamento: 8 },
-  { id: '2', descricao: 'Itaú Platinum', data_vencimento: 20, data_fechamento: 13 },
+  { id: '1', descricao: 'Nubank', data_vencimento: 15, data_fechamento: 8, limite: 5000 },
+  { id: '2', descricao: 'Itaú Platinum', data_vencimento: 20, data_fechamento: 13, limite: 10000 },
 ];
 
 export function calculateAccountBalance(account: Account, transactions: Transaction[]): number {

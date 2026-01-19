@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useFinance } from '@/contexts/FinanceContext';
+import { useCreditCards } from '@/hooks/useCreditCards';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,6 +38,8 @@ import {
 import { cn } from '@/lib/utils';
 import { Transaction, TransactionType, TransactionFilters } from '@/types/finance';
 import { toast } from 'sonner';
+import { format, addMonths, startOfMonth } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export default function Transactions() {
   const { 
@@ -51,6 +54,8 @@ export default function Transactions() {
     toggleCartao,
     filterTransactions 
   } = useFinance();
+  
+  const { creditCards } = useCreditCards();
 
   const [isOpen, setIsOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -68,6 +73,8 @@ export default function Transactions() {
     categoria_id: '',
     pago: false,
     cartao: false,
+    cartao_id: '',
+    fatura_data: '',
   });
 
   const formatCurrency = (value: number) => {
@@ -100,9 +107,35 @@ export default function Transactions() {
       categoria_id: '',
       pago: false,
       cartao: false,
+      cartao_id: '',
+      fatura_data: '',
     });
     setEditingTransaction(null);
   };
+
+  // Gerar opções de fatura baseado na data da transação e fechamento do cartão
+  const faturaOptions = useMemo(() => {
+    if (!formData.cartao || !formData.cartao_id || !formData.data) return [];
+    
+    const card = creditCards.find(c => c.id === formData.cartao_id);
+    if (!card) return [];
+    
+    const transactionDate = new Date(formData.data);
+    const closingDay = card.data_fechamento;
+    
+    // Se a transação é antes do fechamento, vai para a fatura do mês atual
+    // Se é depois, vai para a próxima fatura
+    const options: { value: string; label: string }[] = [];
+    
+    for (let i = 0; i < 6; i++) {
+      const faturaMonth = addMonths(startOfMonth(transactionDate), i);
+      const faturaDate = format(faturaMonth, 'yyyy-MM-01');
+      const label = format(faturaMonth, "MMMM 'de' yyyy", { locale: ptBR });
+      options.push({ value: faturaDate, label: `Fatura de ${label}` });
+    }
+    
+    return options;
+  }, [formData.cartao, formData.cartao_id, formData.data, creditCards]);
 
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
@@ -120,6 +153,8 @@ export default function Transactions() {
       categoria_id: transaction.categoria_id,
       pago: transaction.pago,
       cartao: transaction.cartao,
+      cartao_id: transaction.cartao_id || '',
+      fatura_data: transaction.fatura_data || '',
     });
     setIsOpen(true);
   };
@@ -137,6 +172,8 @@ export default function Transactions() {
       categoria_id: formData.categoria_id,
       pago: formData.pago,
       cartao: formData.cartao,
+      cartao_id: formData.cartao ? formData.cartao_id || null : null,
+      fatura_data: formData.cartao ? formData.fatura_data || null : null,
     };
 
     if (editingTransaction) {
@@ -471,11 +508,53 @@ export default function Transactions() {
                   <Switch
                     id="cartao"
                     checked={formData.cartao}
-                    onCheckedChange={(checked) => setFormData({ ...formData, cartao: checked })}
+                    onCheckedChange={(checked) => setFormData({ ...formData, cartao: checked, cartao_id: '', fatura_data: '' })}
                   />
                   <Label htmlFor="cartao">Cartão de Crédito</Label>
                 </div>
               </div>
+
+              {formData.cartao && (
+                <div className="grid grid-cols-2 gap-4 p-3 rounded-lg bg-secondary/50">
+                  <div className="space-y-2">
+                    <Label htmlFor="cartao_id">Cartão</Label>
+                    <Select
+                      value={formData.cartao_id}
+                      onValueChange={(value) => setFormData({ ...formData, cartao_id: value, fatura_data: '' })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {creditCards.map((card) => (
+                          <SelectItem key={card.id} value={card.id}>
+                            {card.descricao}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fatura">Fatura</Label>
+                    <Select
+                      value={formData.fatura_data}
+                      onValueChange={(value) => setFormData({ ...formData, fatura_data: value })}
+                      disabled={!formData.cartao_id}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a fatura" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {faturaOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
 
               <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? (
