@@ -20,44 +20,59 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
-        <BrowserRouter>
+        <BrowserRouter basename={import.meta.env.DEV ? "/" : "/my-money-hub"}>
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={
-              <ProtectedRoute>
-                <FinanceProvider>
-                  <Dashboard />
-                </FinanceProvider>
-              </ProtectedRoute>
-            } />
-            <Route path="/contas" element={
-              <ProtectedRoute>
-                <FinanceProvider>
-                  <Accounts />
-                </FinanceProvider>
-              </ProtectedRoute>
-            } />
-            <Route path="/categorias" element={
-              <ProtectedRoute>
-                <FinanceProvider>
-                  <Categories />
-                </FinanceProvider>
-              </ProtectedRoute>
-            } />
-            <Route path="/lancamentos" element={
-              <ProtectedRoute>
-                <FinanceProvider>
-                  <Transactions />
-                </FinanceProvider>
-              </ProtectedRoute>
-            } />
-            <Route path="/cartoes" element={
-              <ProtectedRoute>
-                <FinanceProvider>
-                  <CreditCards />
-                </FinanceProvider>
-              </ProtectedRoute>
-            } />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <FinanceProvider>
+                    <Dashboard />
+                  </FinanceProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/contas"
+              element={
+                <ProtectedRoute>
+                  <FinanceProvider>
+                    <Accounts />
+                  </FinanceProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/categorias"
+              element={
+                <ProtectedRoute>
+                  <FinanceProvider>
+                    <Categories />
+                  </FinanceProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/lancamentos"
+              element={
+                <ProtectedRoute>
+                  <FinanceProvider>
+                    <Transactions />
+                  </FinanceProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/cartoes"
+              element={
+                <ProtectedRoute>
+                  <FinanceProvider>
+                    <CreditCards />
+                  </FinanceProvider>
+                </ProtectedRoute>
+              }
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
