@@ -1,15 +1,15 @@
-import { useState, useMemo } from 'react';
-import { MainLayout } from '@/components/layout/MainLayout';
-import { StatCard } from '@/components/dashboard/StatCard';
-import { RevenueExpenseChart } from '@/components/dashboard/RevenueExpenseChart';
-import { CategoryPieChart } from '@/components/dashboard/CategoryPieChart';
-import { AccountsTable } from '@/components/dashboard/AccountsTable';
-import { BalanceProjectionChart } from '@/components/dashboard/BalanceProjectionChart';
-import { MonthSelector } from '@/components/dashboard/MonthSelector';
-import { useFinance } from '@/contexts/FinanceContext';
-import { TrendingUp, TrendingDown, Wallet, Receipt } from 'lucide-react';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { useState, useMemo } from "react";
+import { MainLayout } from "@/components/layout/MainLayout";
+import { StatCard } from "@/components/dashboard/StatCard";
+import { RevenueExpenseChart } from "@/components/dashboard/RevenueExpenseChart";
+import { CategoryPieChart } from "@/components/dashboard/CategoryPieChart";
+import { AccountsTable } from "@/components/dashboard/AccountsTable";
+import { BalanceProjectionChart } from "@/components/dashboard/BalanceProjectionChart";
+import { MonthSelector } from "@/components/dashboard/MonthSelector";
+import { useFinance } from "@/contexts/FinanceContext";
+import { TrendingUp, TrendingDown, Wallet, Receipt } from "lucide-react";
+import { format, startOfMonth, endOfMonth } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 export default function Dashboard() {
   const { transactions, accounts, getAccountBalance } = useFinance();
@@ -19,50 +19,50 @@ export default function Dashboard() {
     const monthStart = startOfMonth(selectedDate);
     const monthEnd = endOfMonth(selectedDate);
 
-    const monthlyTransactions = transactions.filter(t => {
-      const date = new Date(t.data + 'T12:00:00');
+    const monthlyTransactions = transactions.filter((t) => {
+      const date = new Date(t.data + "T12:00:00");
       return date >= monthStart && date <= monthEnd;
     });
 
     const receitas = monthlyTransactions
-      .filter(t => t.tipo === 'Receita')
+      .filter((t) => t.tipo === "Receita")
       .reduce((sum, t) => sum + t.valor, 0);
-    
+
     const despesas = monthlyTransactions
-      .filter(t => t.tipo === 'Despesa')
+      .filter((t) => t.tipo === "Despesa")
       .reduce((sum, t) => sum + t.valor, 0);
 
     const saldo = receitas - despesas;
 
     const totalBalance = accounts
-      .filter(a => a.ativo)
+      .filter((a) => a.ativo)
       .reduce((sum, acc) => sum + getAccountBalance(acc.id), 0);
 
     const pendentes = monthlyTransactions
-      .filter(t => !t.pago && t.tipo === 'Despesa')
+      .filter((t) => !t.pago && t.tipo === "Despesa")
       .reduce((sum, t) => sum + t.valor, 0);
 
     return { receitas, despesas, saldo, totalBalance, pendentes };
   }, [transactions, accounts, getAccountBalance, selectedDate]);
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
     }).format(value);
   };
 
-  const monthName = format(selectedDate, 'MMMM', { locale: ptBR });
+  const monthName = format(selectedDate, "MMMM", { locale: ptBR });
   const year = selectedDate.getFullYear();
 
   return (
-    <MainLayout 
-      title="Dashboard" 
+    <MainLayout
+      title="Dashboard"
       subtitle={`Visão geral de ${monthName} de ${year}`}
       headerActions={
-        <MonthSelector 
-          selectedDate={selectedDate} 
-          onDateChange={setSelectedDate} 
+        <MonthSelector
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
         />
       }
     >
@@ -84,7 +84,7 @@ export default function Dashboard() {
           title="Saldo Mensal"
           value={formatCurrency(stats.saldo)}
           icon={Wallet}
-          variant={stats.saldo >= 0 ? 'income' : 'expense'}
+          variant={stats.saldo >= 0 ? "income" : "expense"}
         />
         <StatCard
           title="Pendentes"

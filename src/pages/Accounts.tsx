@@ -1,41 +1,47 @@
-import { useState } from 'react';
-import { MainLayout } from '@/components/layout/MainLayout';
-import { useFinance } from '@/contexts/FinanceContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState } from "react";
+import { MainLayout } from "@/components/layout/MainLayout";
+import { useFinance } from "@/contexts/FinanceContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Skeleton } from '@/components/ui/skeleton';
-import { 
-  Plus, 
-  Pencil, 
-  Trash2, 
-  Wallet, 
-  TrendingUp, 
-  PiggyBank, 
-  Landmark, 
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Wallet,
+  TrendingUp,
+  PiggyBank,
+  Landmark,
   DollarSign,
-  Loader2
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Account, AccountType } from '@/types/finance';
-import { toast } from 'sonner';
+  Loader2,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Account, AccountType } from "@/types/finance";
+import { toast } from "sonner";
 
-const accountTypes: AccountType[] = ['Corrente', 'Poupança', 'Investimento', 'Carteira', 'Outro'];
+const accountTypes: AccountType[] = [
+  "Corrente",
+  "Poupança",
+  "Investimento",
+  "Carteira",
+  "Outro",
+];
 
 const accountIcons = {
   Corrente: Landmark,
@@ -46,26 +52,33 @@ const accountIcons = {
 };
 
 export default function Accounts() {
-  const { accounts, addAccount, updateAccount, deleteAccount, getAccountBalance, loading } = useFinance();
+  const {
+    accounts,
+    addAccount,
+    updateAccount,
+    deleteAccount,
+    getAccountBalance,
+    loading,
+  } = useFinance();
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [formData, setFormData] = useState({
-    nome: '',
-    tipo: 'Corrente' as AccountType,
-    saldo_inicial: '',
+    nome: "",
+    tipo: "Corrente" as AccountType,
+    saldo_inicial: "",
     ativo: true,
   });
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
     }).format(value);
   };
 
   const resetForm = () => {
-    setFormData({ nome: '', tipo: 'Corrente', saldo_inicial: '', ativo: true });
+    setFormData({ nome: "", tipo: "Corrente", saldo_inicial: "", ativo: true });
     setEditingAccount(null);
   };
 
@@ -88,7 +101,7 @@ export default function Accounts() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     const accountData = {
       nome: formData.nome,
       tipo: formData.tipo,
@@ -99,13 +112,13 @@ export default function Accounts() {
     if (editingAccount) {
       const success = await updateAccount(editingAccount.id, accountData);
       if (success) {
-        toast.success('Conta atualizada com sucesso!');
+        toast.success("Conta atualizada com sucesso!");
         handleOpenChange(false);
       }
     } else {
       const result = await addAccount(accountData);
       if (result) {
-        toast.success('Conta criada com sucesso!');
+        toast.success("Conta criada com sucesso!");
         handleOpenChange(false);
       }
     }
@@ -116,13 +129,16 @@ export default function Accounts() {
   const handleDelete = async (account: Account) => {
     const success = await deleteAccount(account.id);
     if (success) {
-      toast.success('Conta excluída com sucesso!');
+      toast.success("Conta excluída com sucesso!");
     }
   };
 
   if (loading) {
     return (
-      <MainLayout title="Contas" subtitle="Gerencie suas contas bancárias e carteiras">
+      <MainLayout
+        title="Contas"
+        subtitle="Gerencie suas contas bancárias e carteiras"
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-20 lg:pb-0">
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-48 rounded-xl" />
@@ -133,7 +149,10 @@ export default function Accounts() {
   }
 
   return (
-    <MainLayout title="Contas" subtitle="Gerencie suas contas bancárias e carteiras">
+    <MainLayout
+      title="Contas"
+      subtitle="Gerencie suas contas bancárias e carteiras"
+    >
       <div className="flex justify-end mb-6">
         <Dialog open={isOpen} onOpenChange={handleOpenChange}>
           <DialogTrigger asChild>
@@ -145,7 +164,7 @@ export default function Accounts() {
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle className="font-display">
-                {editingAccount ? 'Editar Conta' : 'Nova Conta'}
+                {editingAccount ? "Editar Conta" : "Nova Conta"}
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 mt-4">
@@ -154,17 +173,21 @@ export default function Accounts() {
                 <Input
                   id="nome"
                   value={formData.nome}
-                  onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, nome: e.target.value })
+                  }
                   placeholder="Ex: Conta Corrente Itaú"
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="tipo">Tipo</Label>
                 <Select
                   value={formData.tipo}
-                  onValueChange={(value: AccountType) => setFormData({ ...formData, tipo: value })}
+                  onValueChange={(value: AccountType) =>
+                    setFormData({ ...formData, tipo: value })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -186,7 +209,9 @@ export default function Accounts() {
                   type="number"
                   step="0.01"
                   value={formData.saldo_inicial}
-                  onChange={(e) => setFormData({ ...formData, saldo_inicial: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, saldo_inicial: e.target.value })
+                  }
                   placeholder="0,00"
                 />
               </div>
@@ -196,7 +221,9 @@ export default function Accounts() {
                 <Switch
                   id="ativo"
                   checked={formData.ativo}
-                  onCheckedChange={(checked) => setFormData({ ...formData, ativo: checked })}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, ativo: checked })
+                  }
                 />
               </div>
 
@@ -206,8 +233,10 @@ export default function Accounts() {
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Salvando...
                   </>
+                ) : editingAccount ? (
+                  "Salvar Alterações"
                 ) : (
-                  editingAccount ? 'Salvar Alterações' : 'Criar Conta'
+                  "Criar Conta"
                 )}
               </Button>
             </form>
@@ -218,8 +247,12 @@ export default function Accounts() {
       {accounts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <Wallet className="h-16 w-16 text-muted-foreground/50 mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">Nenhuma conta cadastrada</h3>
-          <p className="text-muted-foreground mb-4">Comece adicionando sua primeira conta</p>
+          <h3 className="text-lg font-semibold text-foreground mb-2">
+            Nenhuma conta cadastrada
+          </h3>
+          <p className="text-muted-foreground mb-4">
+            Comece adicionando sua primeira conta
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-20 lg:pb-0">
@@ -232,7 +265,7 @@ export default function Accounts() {
                 key={account.id}
                 className={cn(
                   "stat-card relative",
-                  !account.ativo && "opacity-60"
+                  !account.ativo && "opacity-60",
                 )}
               >
                 <div className="flex items-start justify-between mb-4">
@@ -259,20 +292,32 @@ export default function Accounts() {
                   </div>
                 </div>
 
-                <h3 className="font-semibold text-foreground mb-1">{account.nome}</h3>
-                <p className="text-sm text-muted-foreground mb-4">{account.tipo}</p>
+                <h3 className="font-semibold text-foreground mb-1">
+                  {account.nome}
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {account.tipo}
+                </p>
 
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Saldo Inicial:</span>
-                    <span className="font-medium">{formatCurrency(account.saldo_inicial)}</span>
+                    <span className="text-muted-foreground">
+                      Saldo Inicial:
+                    </span>
+                    <span className="font-medium">
+                      {formatCurrency(account.saldo_inicial)}
+                    </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Saldo Atual:</span>
-                    <span className={cn(
-                      "font-display font-bold text-lg",
-                      balance >= 0 ? 'text-income' : 'text-expense'
-                    )}>
+                    <span className="text-sm text-muted-foreground">
+                      Saldo Atual:
+                    </span>
+                    <span
+                      className={cn(
+                        "font-display font-bold text-lg",
+                        balance >= 0 ? "text-income" : "text-expense",
+                      )}
+                    >
                       {formatCurrency(balance)}
                     </span>
                   </div>

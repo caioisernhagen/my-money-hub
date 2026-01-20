@@ -1,146 +1,157 @@
-import { useState, useMemo } from 'react';
-import { MainLayout } from '@/components/layout/MainLayout';
-import { useFinance } from '@/contexts/FinanceContext';
-import { useCreditCards } from '@/hooks/useCreditCards';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Skeleton } from '@/components/ui/skeleton';
-import { MonthSelector } from '@/components/dashboard/MonthSelector';
+import { useState, useMemo } from "react";
+import { MainLayout } from "@/components/layout/MainLayout";
+import { useFinance } from "@/contexts/FinanceContext";
+import { useCreditCards } from "@/hooks/useCreditCards";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
+import { MonthSelector } from "@/components/dashboard/MonthSelector";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { 
-  Plus, 
-  Pencil, 
-  Trash2, 
-  Filter, 
-  CreditCard, 
-  Check, 
+} from "@/components/ui/select";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Filter,
+  CreditCard,
+  Check,
   X,
   ArrowUpRight,
   ArrowDownRight,
   Calendar,
   Loader2,
   Receipt,
-  Repeat
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Transaction, TransactionType, TransactionFilters } from '@/types/finance';
-import { toast } from 'sonner';
-import { format, addMonths, startOfMonth, endOfMonth, parseISO } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+  Repeat,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  Transaction,
+  TransactionType,
+  TransactionFilters,
+} from "@/types/finance";
+import { toast } from "sonner";
+import {
+  format,
+  addMonths,
+  startOfMonth,
+  endOfMonth,
+  parseISO,
+} from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 export default function Transactions() {
-  const { 
-    transactions, 
-    categories, 
-    accounts, 
+  const {
+    transactions,
+    categories,
+    accounts,
     loading,
-    addTransaction, 
-    updateTransaction, 
+    addTransaction,
+    updateTransaction,
     deleteTransaction,
     togglePago,
     toggleCartao,
-    filterTransactions 
+    filterTransactions,
   } = useFinance();
-  
+
   const { creditCards } = useCreditCards();
 
   const [isOpen, setIsOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [editingTransaction, setEditingTransaction] =
+    useState<Transaction | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  
+
   const [filters, setFilters] = useState<TransactionFilters>({});
-  
+
   const [formData, setFormData] = useState({
-    descricao: '',
-    valor: '',
-    data: format(new Date(), 'yyyy-MM-dd'),
-    tipo: 'Despesa' as TransactionType,
-    conta_id: '',
-    categoria_id: '',
+    descricao: "",
+    valor: "",
+    data: format(new Date(), "yyyy-MM-dd"),
+    tipo: "Despesa" as TransactionType,
+    conta_id: "",
+    categoria_id: "",
     pago: false,
     cartao: false,
-    cartao_id: '',
-    fatura_data: '',
+    cartao_id: "",
+    fatura_data: "",
     fixa: false,
-    parcelas: '',
+    parcelas: "",
   });
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
     }).format(value);
   };
 
   const formatDate = (dateStr: string) => {
     const date = parseISO(dateStr);
-    return format(date, 'dd/MM/yyyy');
+    return format(date, "dd/MM/yyyy");
   };
 
   // Filtro por mês selecionado + filtros adicionais
   const filteredTransactions = useMemo(() => {
     const monthStart = startOfMonth(selectedDate);
     const monthEnd = endOfMonth(selectedDate);
-    
+
     const monthFilters: TransactionFilters = {
       ...filters,
-      dataInicio: format(monthStart, 'yyyy-MM-dd'),
-      dataFim: format(monthEnd, 'yyyy-MM-dd'),
+      dataInicio: format(monthStart, "yyyy-MM-dd"),
+      dataFim: format(monthEnd, "yyyy-MM-dd"),
     };
-    
+
     return filterTransactions(monthFilters);
   }, [filterTransactions, filters, selectedDate]);
 
   // Totais
   const totals = useMemo(() => {
     const pago = filteredTransactions
-      .filter(t => t.pago)
-      .reduce((sum, t) => sum + (t.tipo === 'Receita' ? t.valor : -t.valor), 0);
-    
+      .filter((t) => t.pago)
+      .reduce((sum, t) => sum + (t.tipo === "Receita" ? t.valor : -t.valor), 0);
+
     const pendente = filteredTransactions
-      .filter(t => !t.pago)
-      .reduce((sum, t) => sum + (t.tipo === 'Receita' ? t.valor : -t.valor), 0);
-    
+      .filter((t) => !t.pago)
+      .reduce((sum, t) => sum + (t.tipo === "Receita" ? t.valor : -t.valor), 0);
+
     const total = pago + pendente;
-    
+
     return { pago, pendente, total };
   }, [filteredTransactions]);
 
   const filteredCategories = useMemo(() => {
-    return categories.filter(c => c.tipo === formData.tipo);
+    return categories.filter((c) => c.tipo === formData.tipo);
   }, [categories, formData.tipo]);
 
   const resetForm = () => {
     setFormData({
-      descricao: '',
-      valor: '',
-      data: format(new Date(), 'yyyy-MM-dd'),
-      tipo: 'Despesa',
-      conta_id: accounts[0]?.id || '',
-      categoria_id: '',
+      descricao: "",
+      valor: "",
+      data: format(new Date(), "yyyy-MM-dd"),
+      tipo: "Despesa",
+      conta_id: accounts[0]?.id || "",
+      categoria_id: "",
       pago: false,
       cartao: false,
-      cartao_id: '',
-      fatura_data: '',
+      cartao_id: "",
+      fatura_data: "",
       fixa: false,
-      parcelas: '',
+      parcelas: "",
     });
     setEditingTransaction(null);
   };
@@ -148,20 +159,20 @@ export default function Transactions() {
   // Gerar opções de fatura
   const faturaOptions = useMemo(() => {
     if (!formData.cartao || !formData.cartao_id || !formData.data) return [];
-    
-    const card = creditCards.find(c => c.id === formData.cartao_id);
+
+    const card = creditCards.find((c) => c.id === formData.cartao_id);
     if (!card) return [];
-    
+
     const transactionDate = parseISO(formData.data);
     const options: { value: string; label: string }[] = [];
-    
+
     for (let i = 0; i < 6; i++) {
       const faturaMonth = addMonths(startOfMonth(transactionDate), i);
-      const faturaDate = format(faturaMonth, 'yyyy-MM-01');
+      const faturaDate = format(faturaMonth, "yyyy-MM-01");
       const label = format(faturaMonth, "MMMM 'de' yyyy", { locale: ptBR });
       options.push({ value: faturaDate, label: `Fatura de ${label}` });
     }
-    
+
     return options;
   }, [formData.cartao, formData.cartao_id, formData.data, creditCards]);
 
@@ -181,10 +192,10 @@ export default function Transactions() {
       categoria_id: transaction.categoria_id,
       pago: transaction.pago,
       cartao: transaction.cartao,
-      cartao_id: transaction.cartao_id || '',
-      fatura_data: transaction.fatura_data || '',
+      cartao_id: transaction.cartao_id || "",
+      fatura_data: transaction.fatura_data || "",
       fixa: transaction.fixa || false,
-      parcelas: '',
+      parcelas: "",
     });
     setIsOpen(true);
   };
@@ -192,7 +203,7 @@ export default function Transactions() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     const transactionData = {
       descricao: formData.descricao,
       valor: parseFloat(formData.valor) || 0,
@@ -205,19 +216,25 @@ export default function Transactions() {
       cartao_id: formData.cartao ? formData.cartao_id || null : null,
       fatura_data: formData.cartao ? formData.fatura_data || null : null,
       fixa: formData.fixa,
-      parcelas: formData.cartao && formData.parcelas ? parseInt(formData.parcelas) : null,
+      parcelas:
+        formData.cartao && formData.parcelas
+          ? parseInt(formData.parcelas)
+          : null,
     };
 
     if (editingTransaction) {
-      const success = await updateTransaction(editingTransaction.id, transactionData);
+      const success = await updateTransaction(
+        editingTransaction.id,
+        transactionData,
+      );
       if (success) {
-        toast.success('Lançamento atualizado!');
+        toast.success("Lançamento atualizado!");
         handleOpenChange(false);
       }
     } else {
       const result = await addTransaction(transactionData);
       if (result) {
-        toast.success('Lançamento criado!');
+        toast.success("Lançamento criado!");
         handleOpenChange(false);
       }
     }
@@ -228,7 +245,7 @@ export default function Transactions() {
   const handleDelete = async (id: string) => {
     const success = await deleteTransaction(id);
     if (success) {
-      toast.success('Lançamento excluído!');
+      toast.success("Lançamento excluído!");
     }
   };
 
@@ -236,8 +253,9 @@ export default function Transactions() {
     setFilters({});
   };
 
-  const hasActiveFilters = Object.entries(filters).some(([key, v]) => 
-    key !== 'dataInicio' && key !== 'dataFim' && v !== undefined && v !== ''
+  const hasActiveFilters = Object.entries(filters).some(
+    ([key, v]) =>
+      key !== "dataInicio" && key !== "dataFim" && v !== undefined && v !== "",
   );
 
   if (loading) {
@@ -256,13 +274,13 @@ export default function Transactions() {
   }
 
   return (
-    <MainLayout 
-      title="Lançamentos" 
+    <MainLayout
+      title="Lançamentos"
       subtitle="Gerencie suas transações"
       headerActions={
-        <MonthSelector 
-          selectedDate={selectedDate} 
-          onDateChange={setSelectedDate} 
+        <MonthSelector
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
         />
       }
     >
@@ -270,28 +288,34 @@ export default function Transactions() {
       <div className="grid grid-cols-3 gap-3 mb-4">
         <div className="stat-card !p-3 text-center">
           <p className="text-xs text-muted-foreground mb-1">Pago</p>
-          <p className={cn(
-            "text-sm font-semibold",
-            totals.pago >= 0 ? 'text-income' : 'text-expense'
-          )}>
+          <p
+            className={cn(
+              "text-sm font-semibold",
+              totals.pago >= 0 ? "text-income" : "text-expense",
+            )}
+          >
             {formatCurrency(totals.pago)}
           </p>
         </div>
         <div className="stat-card !p-3 text-center">
           <p className="text-xs text-muted-foreground mb-1">Pendente</p>
-          <p className={cn(
-            "text-sm font-semibold",
-            totals.pendente >= 0 ? 'text-income' : 'text-expense'
-          )}>
+          <p
+            className={cn(
+              "text-sm font-semibold",
+              totals.pendente >= 0 ? "text-income" : "text-expense",
+            )}
+          >
             {formatCurrency(totals.pendente)}
           </p>
         </div>
         <div className="stat-card !p-3 text-center">
           <p className="text-xs text-muted-foreground mb-1">Total</p>
-          <p className={cn(
-            "text-sm font-semibold",
-            totals.total >= 0 ? 'text-income' : 'text-expense'
-          )}>
+          <p
+            className={cn(
+              "text-sm font-semibold",
+              totals.total >= 0 ? "text-income" : "text-expense",
+            )}
+          >
             {formatCurrency(totals.total)}
           </p>
         </div>
@@ -314,14 +338,21 @@ export default function Transactions() {
             </DialogTrigger>
             <DialogContent className="sm:max-w-[400px]">
               <DialogHeader>
-                <DialogTitle className="font-medium">Filtrar Lançamentos</DialogTitle>
+                <DialogTitle className="font-medium">
+                  Filtrar Lançamentos
+                </DialogTitle>
               </DialogHeader>
               <div className="space-y-4 mt-4">
                 <div className="space-y-2">
                   <Label>Conta</Label>
                   <Select
-                    value={filters.conta_id || 'all'}
-                    onValueChange={(value) => setFilters({ ...filters, conta_id: value === 'all' ? undefined : value })}
+                    value={filters.conta_id || "all"}
+                    onValueChange={(value) =>
+                      setFilters({
+                        ...filters,
+                        conta_id: value === "all" ? undefined : value,
+                      })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Todas as contas" />
@@ -340,8 +371,13 @@ export default function Transactions() {
                 <div className="space-y-2">
                   <Label>Categoria</Label>
                   <Select
-                    value={filters.categoria_id || 'all'}
-                    onValueChange={(value) => setFilters({ ...filters, categoria_id: value === 'all' ? undefined : value })}
+                    value={filters.categoria_id || "all"}
+                    onValueChange={(value) =>
+                      setFilters({
+                        ...filters,
+                        categoria_id: value === "all" ? undefined : value,
+                      })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Todas as categorias" />
@@ -351,7 +387,10 @@ export default function Transactions() {
                       {categories.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
                           <div className="flex items-center gap-2">
-                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: category.cor }} />
+                            <div
+                              className="w-2.5 h-2.5 rounded-full"
+                              style={{ backgroundColor: category.cor }}
+                            />
                             {category.nome}
                           </div>
                         </SelectItem>
@@ -363,8 +402,16 @@ export default function Transactions() {
                 <div className="space-y-2">
                   <Label>Tipo</Label>
                   <Select
-                    value={filters.tipo || 'all'}
-                    onValueChange={(value) => setFilters({ ...filters, tipo: value === 'all' ? undefined : value as TransactionType })}
+                    value={filters.tipo || "all"}
+                    onValueChange={(value) =>
+                      setFilters({
+                        ...filters,
+                        tipo:
+                          value === "all"
+                            ? undefined
+                            : (value as TransactionType),
+                      })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Todos os tipos" />
@@ -381,11 +428,19 @@ export default function Transactions() {
                   <div className="space-y-2">
                     <Label>Status</Label>
                     <Select
-                      value={filters.pago === undefined ? 'all' : filters.pago ? 'true' : 'false'}
-                      onValueChange={(value) => setFilters({ 
-                        ...filters, 
-                        pago: value === 'all' ? undefined : value === 'true' 
-                      })}
+                      value={
+                        filters.pago === undefined
+                          ? "all"
+                          : filters.pago
+                            ? "true"
+                            : "false"
+                      }
+                      onValueChange={(value) =>
+                        setFilters({
+                          ...filters,
+                          pago: value === "all" ? undefined : value === "true",
+                        })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Todos" />
@@ -400,11 +455,20 @@ export default function Transactions() {
                   <div className="space-y-2">
                     <Label>Cartão</Label>
                     <Select
-                      value={filters.cartao === undefined ? 'all' : filters.cartao ? 'true' : 'false'}
-                      onValueChange={(value) => setFilters({ 
-                        ...filters, 
-                        cartao: value === 'all' ? undefined : value === 'true' 
-                      })}
+                      value={
+                        filters.cartao === undefined
+                          ? "all"
+                          : filters.cartao
+                            ? "true"
+                            : "false"
+                      }
+                      onValueChange={(value) =>
+                        setFilters({
+                          ...filters,
+                          cartao:
+                            value === "all" ? undefined : value === "true",
+                        })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Todos" />
@@ -419,10 +483,17 @@ export default function Transactions() {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1" onClick={clearFilters}>
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={clearFilters}
+                  >
                     Limpar
                   </Button>
-                  <Button className="flex-1" onClick={() => setIsFilterOpen(false)}>
+                  <Button
+                    className="flex-1"
+                    onClick={() => setIsFilterOpen(false)}
+                  >
                     Aplicar
                   </Button>
                 </div>
@@ -448,7 +519,7 @@ export default function Transactions() {
           <DialogContent className="sm:max-w-[450px]">
             <DialogHeader>
               <DialogTitle className="font-medium">
-                {editingTransaction ? 'Editar Lançamento' : 'Novo Lançamento'}
+                {editingTransaction ? "Editar Lançamento" : "Novo Lançamento"}
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 mt-4">
@@ -457,7 +528,9 @@ export default function Transactions() {
                 <Input
                   id="descricao"
                   value={formData.descricao}
-                  onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, descricao: e.target.value })
+                  }
                   placeholder="Ex: Supermercado"
                   required
                 />
@@ -471,7 +544,9 @@ export default function Transactions() {
                     type="number"
                     step="0.01"
                     value={formData.valor}
-                    onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, valor: e.target.value })
+                    }
                     placeholder="0,00"
                     required
                   />
@@ -482,21 +557,25 @@ export default function Transactions() {
                     id="data"
                     type="date"
                     value={formData.data}
-                    onChange={(e) => setFormData({ ...formData, data: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, data: e.target.value })
+                    }
                     required
                   />
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="tipo">Tipo</Label>
                 <Select
                   value={formData.tipo}
-                  onValueChange={(value: TransactionType) => setFormData({ 
-                    ...formData, 
-                    tipo: value,
-                    categoria_id: '' 
-                  })}
+                  onValueChange={(value: TransactionType) =>
+                    setFormData({
+                      ...formData,
+                      tipo: value,
+                      categoria_id: "",
+                    })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -513,17 +592,21 @@ export default function Transactions() {
                   <Label htmlFor="conta">Conta</Label>
                   <Select
                     value={formData.conta_id}
-                    onValueChange={(value) => setFormData({ ...formData, conta_id: value })}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, conta_id: value })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent>
-                      {accounts.filter(a => a.ativo).map((account) => (
-                        <SelectItem key={account.id} value={account.id}>
-                          {account.nome}
-                        </SelectItem>
-                      ))}
+                      {accounts
+                        .filter((a) => a.ativo)
+                        .map((account) => (
+                          <SelectItem key={account.id} value={account.id}>
+                            {account.nome}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -531,7 +614,9 @@ export default function Transactions() {
                   <Label htmlFor="categoria">Categoria</Label>
                   <Select
                     value={formData.categoria_id}
-                    onValueChange={(value) => setFormData({ ...formData, categoria_id: value })}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, categoria_id: value })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione" />
@@ -540,7 +625,10 @@ export default function Transactions() {
                       {filteredCategories.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
                           <div className="flex items-center gap-2">
-                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: category.cor }} />
+                            <div
+                              className="w-2.5 h-2.5 rounded-full"
+                              style={{ backgroundColor: category.cor }}
+                            />
                             {category.nome}
                           </div>
                         </SelectItem>
@@ -555,26 +643,44 @@ export default function Transactions() {
                   <Switch
                     id="pago"
                     checked={formData.pago}
-                    onCheckedChange={(checked) => setFormData({ ...formData, pago: checked })}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, pago: checked })
+                    }
                   />
-                  <Label htmlFor="pago" className="text-sm">Pago</Label>
+                  <Label htmlFor="pago" className="text-sm">
+                    Pago
+                  </Label>
                 </div>
                 <div className="flex items-center gap-2">
                   <Switch
                     id="cartao"
                     checked={formData.cartao}
-                    onCheckedChange={(checked) => setFormData({ ...formData, cartao: checked, cartao_id: '', fatura_data: '', parcelas: '' })}
+                    onCheckedChange={(checked) =>
+                      setFormData({
+                        ...formData,
+                        cartao: checked,
+                        cartao_id: "",
+                        fatura_data: "",
+                        parcelas: "",
+                      })
+                    }
                   />
-                  <Label htmlFor="cartao" className="text-sm">Cartão</Label>
+                  <Label htmlFor="cartao" className="text-sm">
+                    Cartão
+                  </Label>
                 </div>
-                {!editingTransaction && formData.tipo === 'Despesa' && (
+                {!editingTransaction && (
                   <div className="flex items-center gap-2">
                     <Switch
                       id="fixa"
                       checked={formData.fixa}
-                      onCheckedChange={(checked) => setFormData({ ...formData, fixa: checked })}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, fixa: checked })
+                      }
                     />
-                    <Label htmlFor="fixa" className="text-sm">Fixa</Label>
+                    <Label htmlFor="fixa" className="text-sm">
+                      Fixa
+                    </Label>
                   </div>
                 )}
               </div>
@@ -586,7 +692,13 @@ export default function Transactions() {
                       <Label>Cartão</Label>
                       <Select
                         value={formData.cartao_id}
-                        onValueChange={(value) => setFormData({ ...formData, cartao_id: value, fatura_data: '' })}
+                        onValueChange={(value) =>
+                          setFormData({
+                            ...formData,
+                            cartao_id: value,
+                            fatura_data: "",
+                          })
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione" />
@@ -604,7 +716,9 @@ export default function Transactions() {
                       <Label>Fatura</Label>
                       <Select
                         value={formData.fatura_data}
-                        onValueChange={(value) => setFormData({ ...formData, fatura_data: value })}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, fatura_data: value })
+                        }
                         disabled={!formData.cartao_id}
                       >
                         <SelectTrigger>
@@ -629,16 +743,28 @@ export default function Transactions() {
                           min="2"
                           max="48"
                           value={formData.parcelas}
-                          onChange={(e) => setFormData({ ...formData, parcelas: e.target.value })}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              parcelas: e.target.value,
+                            })
+                          }
                           placeholder="Ex: 12"
                           className="w-24"
                         />
-                        <span className="text-sm text-muted-foreground">vezes</span>
-                        {formData.parcelas && parseInt(formData.parcelas) > 1 && (
-                          <span className="text-xs text-muted-foreground ml-auto">
-                            {formatCurrency((parseFloat(formData.valor) || 0) / parseInt(formData.parcelas))}/parcela
-                          </span>
-                        )}
+                        <span className="text-sm text-muted-foreground">
+                          vezes
+                        </span>
+                        {formData.parcelas &&
+                          parseInt(formData.parcelas) > 1 && (
+                            <span className="text-xs text-muted-foreground ml-auto">
+                              {formatCurrency(
+                                (parseFloat(formData.valor) || 0) /
+                                  parseInt(formData.parcelas),
+                              )}
+                              /parcela
+                            </span>
+                          )}
                       </div>
                     </div>
                   )}
@@ -651,8 +777,10 @@ export default function Transactions() {
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Salvando...
                   </>
+                ) : editingTransaction ? (
+                  "Salvar Alterações"
                 ) : (
-                  editingTransaction ? 'Salvar Alterações' : 'Criar Lançamento'
+                  "Criar Lançamento"
                 )}
               </Button>
             </form>
@@ -666,8 +794,12 @@ export default function Transactions() {
           <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
             <Receipt className="h-7 w-7 text-muted-foreground" />
           </div>
-          <h3 className="text-base font-medium text-foreground mb-1">Nenhum lançamento</h3>
-          <p className="text-sm text-muted-foreground">Nenhum lançamento encontrado para este período</p>
+          <h3 className="text-base font-medium text-foreground mb-1">
+            Nenhum lançamento
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Nenhum lançamento encontrado para este período
+          </p>
         </div>
       ) : (
         <div className="stat-card pb-20 lg:pb-0">
@@ -677,37 +809,45 @@ export default function Transactions() {
 
           <div className="space-y-1.5">
             {filteredTransactions.map((transaction) => {
-              const category = categories.find(c => c.id === transaction.categoria_id);
-              const account = accounts.find(a => a.id === transaction.conta_id);
-              const isIncome = transaction.tipo === 'Receita';
-              
+              const category = categories.find(
+                (c) => c.id === transaction.categoria_id,
+              );
+              const account = accounts.find(
+                (a) => a.id === transaction.conta_id,
+              );
+              const isIncome = transaction.tipo === "Receita";
+
               return (
                 <div
                   key={transaction.id}
                   className="flex items-center justify-between p-3 rounded-xl bg-secondary/30 hover:bg-secondary/50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div className={cn(
-                      "flex h-9 w-9 items-center justify-center rounded-xl",
-                      isIncome ? 'bg-income/10' : 'bg-expense/10'
-                    )}>
+                    <div
+                      className={cn(
+                        "flex h-9 w-9 items-center justify-center rounded-xl",
+                        isIncome ? "bg-income/10" : "bg-expense/10",
+                      )}
+                    >
                       {isIncome ? (
                         <ArrowUpRight className="h-4 w-4 text-income" />
                       ) : (
                         <ArrowDownRight className="h-4 w-4 text-expense" />
                       )}
                     </div>
-                    
+
                     <div>
                       <p className="font-medium text-sm text-foreground flex items-center gap-1.5">
                         {transaction.descricao}
-                        {transaction.fixa && <Repeat className="h-3 w-3 text-muted-foreground" />}
+                        {transaction.fixa && (
+                          <Repeat className="h-3 w-3 text-muted-foreground" />
+                        )}
                       </p>
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         {category && (
                           <div className="flex items-center gap-1">
-                            <div 
-                              className="w-1.5 h-1.5 rounded-full" 
+                            <div
+                              className="w-1.5 h-1.5 rounded-full"
                               style={{ backgroundColor: category.cor }}
                             />
                             <span>{category.nome}</span>
@@ -726,14 +866,18 @@ export default function Transactions() {
                         onClick={() => togglePago(transaction.id)}
                         className={cn(
                           "flex items-center gap-1 px-1.5 py-0.5 rounded text-xs transition-colors",
-                          transaction.pago 
-                            ? 'bg-income/10 text-income' 
-                            : 'bg-muted text-muted-foreground'
+                          transaction.pago
+                            ? "bg-income/10 text-income"
+                            : "bg-muted text-muted-foreground",
                         )}
                       >
-                        {transaction.pago ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
+                        {transaction.pago ? (
+                          <Check className="h-3 w-3" />
+                        ) : (
+                          <X className="h-3 w-3" />
+                        )}
                       </button>
-                      
+
                       {transaction.cartao && (
                         <span className="flex items-center px-1.5 py-0.5 rounded text-xs bg-chart-1/10 text-chart-1">
                           <CreditCard className="h-3 w-3" />
@@ -742,11 +886,14 @@ export default function Transactions() {
                     </div>
 
                     {/* Value */}
-                    <span className={cn(
-                      "font-semibold text-sm min-w-[80px] text-right",
-                      isIncome ? 'text-income' : 'text-expense'
-                    )}>
-                      {isIncome ? '+' : '-'}{formatCurrency(transaction.valor)}
+                    <span
+                      className={cn(
+                        "font-semibold text-sm min-w-[80px] text-right",
+                        isIncome ? "text-income" : "text-expense",
+                      )}
+                    >
+                      {isIncome ? "+" : "-"}
+                      {formatCurrency(transaction.valor)}
                     </span>
 
                     {/* Actions */}

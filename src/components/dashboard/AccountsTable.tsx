@@ -1,6 +1,12 @@
-import { useFinance } from '@/contexts/FinanceContext';
-import { Wallet, TrendingUp, PiggyBank, Landmark, DollarSign } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useFinance } from "@/contexts/FinanceContext";
+import {
+  Wallet,
+  TrendingUp,
+  PiggyBank,
+  Landmark,
+  DollarSign,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const accountIcons = {
   Corrente: Landmark,
@@ -12,16 +18,19 @@ const accountIcons = {
 
 export function AccountsTable() {
   const { accounts, getAccountBalance } = useFinance();
-  
+
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
     }).format(value);
   };
 
-  const activeAccounts = accounts.filter(a => a.ativo);
-  const totalBalance = activeAccounts.reduce((sum, acc) => sum + getAccountBalance(acc.id), 0);
+  const activeAccounts = accounts.filter((a) => a.ativo);
+  const totalBalance = activeAccounts.reduce(
+    (sum, acc) => sum + getAccountBalance(acc.id),
+    0,
+  );
 
   return (
     <div className="stat-card">
@@ -33,12 +42,12 @@ export function AccountsTable() {
           Total: {formatCurrency(totalBalance)}
         </span>
       </div>
-      
+
       <div className="space-y-3">
         {activeAccounts.map((account) => {
           const balance = getAccountBalance(account.id);
           const Icon = accountIcons[account.tipo] || Wallet;
-          
+
           return (
             <div
               key={account.id}
@@ -50,13 +59,17 @@ export function AccountsTable() {
                 </div>
                 <div>
                   <p className="font-medium text-foreground">{account.nome}</p>
-                  <p className="text-xs text-muted-foreground">{account.tipo}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {account.tipo}
+                  </p>
                 </div>
               </div>
-              <p className={cn(
-                "font-display font-semibold",
-                balance >= 0 ? 'text-income' : 'text-expense'
-              )}>
+              <p
+                className={cn(
+                  "font-display font-semibold",
+                  balance >= 0 ? "text-income" : "text-expense",
+                )}
+              >
                 {formatCurrency(balance)}
               </p>
             </div>
