@@ -19,10 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Pencil, Trash2, Tag, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Category, TransactionType } from '@/types/finance';
 import { toast } from 'sonner';
+import { IconPicker, CategoryIcon } from '@/components/ui/icon-picker';
 
 const categoryColors = [
   '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', 
@@ -40,10 +41,11 @@ export default function Categories() {
     nome: '',
     tipo: 'Despesa' as TransactionType,
     cor: '#3b82f6',
+    icone: 'Tag',
   });
 
   const resetForm = () => {
-    setFormData({ nome: '', tipo: 'Despesa', cor: '#3b82f6' });
+    setFormData({ nome: '', tipo: 'Despesa', cor: '#3b82f6', icone: 'Tag' });
     setEditingCategory(null);
   };
 
@@ -58,6 +60,7 @@ export default function Categories() {
       nome: category.nome,
       tipo: category.tipo,
       cor: category.cor,
+      icone: category.icone || 'Tag',
     });
     setIsOpen(true);
   };
@@ -95,21 +98,13 @@ export default function Categories() {
 
   if (loading) {
     return (
-      <MainLayout title="Categorias" subtitle="Organize suas receitas e despesas por categoria">
-        <div className="space-y-8 pb-20 lg:pb-0">
+      <MainLayout title="Categorias" subtitle="Organize suas receitas e despesas">
+        <div className="space-y-6 pb-20 lg:pb-0">
           <div>
-            <Skeleton className="h-6 w-48 mb-4" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            <Skeleton className="h-5 w-36 mb-3" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
               {[1, 2].map((i) => (
-                <Skeleton key={i} className="h-16 rounded-xl" />
-              ))}
-            </div>
-          </div>
-          <div>
-            <Skeleton className="h-6 w-48 mb-4" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-              {[1, 2, 3, 4].map((i) => (
-                <Skeleton key={i} className="h-16 rounded-xl" />
+                <Skeleton key={i} className="h-14 rounded-xl" />
               ))}
             </div>
           </div>
@@ -119,31 +114,41 @@ export default function Categories() {
   }
 
   return (
-    <MainLayout title="Categorias" subtitle="Organize suas receitas e despesas por categoria">
-      <div className="flex justify-end mb-6">
+    <MainLayout title="Categorias" subtitle="Organize suas receitas e despesas">
+      <div className="flex justify-end mb-5">
         <Dialog open={isOpen} onOpenChange={handleOpenChange}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
+            <Button size="sm" className="gap-2">
               <Plus className="h-4 w-4" />
               Nova Categoria
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[400px]">
             <DialogHeader>
-              <DialogTitle className="font-display">
+              <DialogTitle className="font-medium">
                 {editingCategory ? 'Editar Categoria' : 'Nova Categoria'}
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-              <div className="space-y-2">
-                <Label htmlFor="nome">Nome da Categoria</Label>
-                <Input
-                  id="nome"
-                  value={formData.nome}
-                  onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                  placeholder="Ex: Alimentação"
-                  required
-                />
+              <div className="flex items-end gap-3">
+                <div className="space-y-2">
+                  <Label>Ícone</Label>
+                  <IconPicker 
+                    value={formData.icone} 
+                    onChange={(icone) => setFormData({ ...formData, icone })}
+                    color={formData.cor}
+                  />
+                </div>
+                <div className="flex-1 space-y-2">
+                  <Label htmlFor="nome">Nome</Label>
+                  <Input
+                    id="nome"
+                    value={formData.nome}
+                    onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                    placeholder="Ex: Alimentação"
+                    required
+                  />
+                </div>
               </div>
               
               <div className="space-y-2">
@@ -164,13 +169,13 @@ export default function Categories() {
 
               <div className="space-y-2">
                 <Label>Cor</Label>
-                <div className="grid grid-cols-9 gap-2">
+                <div className="grid grid-cols-9 gap-1.5">
                   {categoryColors.map((color) => (
                     <button
                       key={color}
                       type="button"
                       className={cn(
-                        "w-8 h-8 rounded-lg transition-all",
+                        "w-7 h-7 rounded-lg transition-all",
                         formData.cor === color && "ring-2 ring-offset-2 ring-primary"
                       )}
                       style={{ backgroundColor: color }}
@@ -197,52 +202,54 @@ export default function Categories() {
 
       {categories.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <Tag className="h-16 w-16 text-muted-foreground/50 mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">Nenhuma categoria cadastrada</h3>
-          <p className="text-muted-foreground mb-4">Comece adicionando sua primeira categoria</p>
+          <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
+            <CategoryIcon iconName="Tag" className="h-7 w-7 text-muted-foreground" />
+          </div>
+          <h3 className="text-base font-medium text-foreground mb-1">Nenhuma categoria</h3>
+          <p className="text-sm text-muted-foreground">Comece adicionando sua primeira categoria</p>
         </div>
       ) : (
-        <div className="space-y-8 pb-20 lg:pb-0">
+        <div className="space-y-6 pb-20 lg:pb-0">
           {/* Receitas */}
           <div>
-            <h2 className="text-lg font-display font-semibold text-income mb-4 flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-income" />
-              Categorias de Receita
+            <h2 className="text-sm font-medium text-income mb-3 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-income" />
+              Receitas
             </h2>
             {incomeCategories.length === 0 ? (
               <p className="text-muted-foreground text-sm">Nenhuma categoria de receita</p>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
                 {incomeCategories.map((category) => (
                   <div
                     key={category.id}
-                    className="stat-card flex items-center justify-between"
+                    className="stat-card !p-3 flex items-center justify-between"
                   >
                     <div className="flex items-center gap-3">
                       <div
-                        className="w-10 h-10 rounded-lg flex items-center justify-center"
-                        style={{ backgroundColor: `${category.cor}20` }}
+                        className="w-9 h-9 rounded-xl flex items-center justify-center"
+                        style={{ backgroundColor: `${category.cor}15` }}
                       >
-                        <Tag className="h-5 w-5" style={{ color: category.cor }} />
+                        <CategoryIcon iconName={category.icone || 'Tag'} className="h-4 w-4" color={category.cor} />
                       </div>
-                      <span className="font-medium text-foreground">{category.nome}</span>
+                      <span className="font-medium text-sm text-foreground">{category.nome}</span>
                     </div>
-                    <div className="flex gap-1">
+                    <div className="flex gap-0.5">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
+                        className="h-7 w-7"
                         onClick={() => handleEdit(category)}
                       >
-                        <Pencil className="h-4 w-4" />
+                        <Pencil className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        className="h-7 w-7 text-destructive hover:text-destructive"
                         onClick={() => handleDelete(category)}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </div>
@@ -253,44 +260,44 @@ export default function Categories() {
 
           {/* Despesas */}
           <div>
-            <h2 className="text-lg font-display font-semibold text-expense mb-4 flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-expense" />
-              Categorias de Despesa
+            <h2 className="text-sm font-medium text-expense mb-3 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-expense" />
+              Despesas
             </h2>
             {expenseCategories.length === 0 ? (
               <p className="text-muted-foreground text-sm">Nenhuma categoria de despesa</p>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
                 {expenseCategories.map((category) => (
                   <div
                     key={category.id}
-                    className="stat-card flex items-center justify-between"
+                    className="stat-card !p-3 flex items-center justify-between"
                   >
                     <div className="flex items-center gap-3">
                       <div
-                        className="w-10 h-10 rounded-lg flex items-center justify-center"
-                        style={{ backgroundColor: `${category.cor}20` }}
+                        className="w-9 h-9 rounded-xl flex items-center justify-center"
+                        style={{ backgroundColor: `${category.cor}15` }}
                       >
-                        <Tag className="h-5 w-5" style={{ color: category.cor }} />
+                        <CategoryIcon iconName={category.icone || 'Tag'} className="h-4 w-4" color={category.cor} />
                       </div>
-                      <span className="font-medium text-foreground">{category.nome}</span>
+                      <span className="font-medium text-sm text-foreground">{category.nome}</span>
                     </div>
-                    <div className="flex gap-1">
+                    <div className="flex gap-0.5">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
+                        className="h-7 w-7"
                         onClick={() => handleEdit(category)}
                       >
-                        <Pencil className="h-4 w-4" />
+                        <Pencil className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        className="h-7 w-7 text-destructive hover:text-destructive"
                         onClick={() => handleDelete(category)}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </div>

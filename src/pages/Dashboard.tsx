@@ -4,12 +4,11 @@ import { StatCard } from '@/components/dashboard/StatCard';
 import { RevenueExpenseChart } from '@/components/dashboard/RevenueExpenseChart';
 import { CategoryPieChart } from '@/components/dashboard/CategoryPieChart';
 import { AccountsTable } from '@/components/dashboard/AccountsTable';
-import { RecentTransactions } from '@/components/dashboard/RecentTransactions';
 import { BalanceProjectionChart } from '@/components/dashboard/BalanceProjectionChart';
 import { MonthSelector } from '@/components/dashboard/MonthSelector';
 import { useFinance } from '@/contexts/FinanceContext';
 import { TrendingUp, TrendingDown, Wallet, Receipt } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, isSameMonth } from 'date-fns';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export default function Dashboard() {
@@ -21,7 +20,7 @@ export default function Dashboard() {
     const monthEnd = endOfMonth(selectedDate);
 
     const monthlyTransactions = transactions.filter(t => {
-      const date = new Date(t.data);
+      const date = new Date(t.data + 'T12:00:00');
       return date >= monthStart && date <= monthEnd;
     });
 
@@ -55,7 +54,6 @@ export default function Dashboard() {
 
   const monthName = format(selectedDate, 'MMMM', { locale: ptBR });
   const year = selectedDate.getFullYear();
-  const isCurrentMonth = isSameMonth(selectedDate, new Date());
 
   return (
     <MainLayout 
@@ -69,49 +67,43 @@ export default function Dashboard() {
       }
     >
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <StatCard
-          title="Receitas do Mês"
+          title="Receitas"
           value={formatCurrency(stats.receitas)}
           icon={TrendingUp}
           variant="income"
         />
         <StatCard
-          title="Despesas do Mês"
+          title="Despesas"
           value={formatCurrency(stats.despesas)}
           icon={TrendingDown}
           variant="expense"
         />
         <StatCard
-          title="Saldo do Mês"
+          title="Saldo Mensal"
           value={formatCurrency(stats.saldo)}
           icon={Wallet}
           variant={stats.saldo >= 0 ? 'income' : 'expense'}
         />
         <StatCard
-          title="Despesas Pendentes"
+          title="Pendentes"
           value={formatCurrency(stats.pendentes)}
-          subtitle="A pagar"
           icon={Receipt}
           variant="default"
         />
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         <RevenueExpenseChart />
-        <BalanceProjectionChart />
+        <CategoryPieChart selectedDate={selectedDate} />
       </div>
 
       {/* Bottom Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <CategoryPieChart />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-20 lg:pb-0">
+        <BalanceProjectionChart />
         <AccountsTable />
-      </div>
-
-      {/* Recent Transactions */}
-      <div className="pb-20 lg:pb-0">
-        <RecentTransactions />
       </div>
     </MainLayout>
   );

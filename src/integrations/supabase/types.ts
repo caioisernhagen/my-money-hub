@@ -51,6 +51,7 @@ export type Database = {
         Row: {
           cor: string
           created_at: string
+          icone: string | null
           id: string
           nome: string
           tipo: Database["public"]["Enums"]["transaction_type"]
@@ -60,6 +61,7 @@ export type Database = {
         Insert: {
           cor?: string
           created_at?: string
+          icone?: string | null
           id?: string
           nome: string
           tipo: Database["public"]["Enums"]["transaction_type"]
@@ -69,6 +71,7 @@ export type Database = {
         Update: {
           cor?: string
           created_at?: string
+          icone?: string | null
           id?: string
           nome?: string
           tipo?: Database["public"]["Enums"]["transaction_type"]
@@ -120,9 +123,13 @@ export type Database = {
           data: string
           descricao: string
           fatura_data: string | null
+          fixa: boolean
           id: string
           pago: boolean
+          parcela_atual: number | null
+          parcelas: number | null
           tipo: Database["public"]["Enums"]["transaction_type"]
+          transaction_parent_id: string | null
           updated_at: string
           user_id: string
           valor: number
@@ -136,9 +143,13 @@ export type Database = {
           data?: string
           descricao: string
           fatura_data?: string | null
+          fixa?: boolean
           id?: string
           pago?: boolean
+          parcela_atual?: number | null
+          parcelas?: number | null
           tipo: Database["public"]["Enums"]["transaction_type"]
+          transaction_parent_id?: string | null
           updated_at?: string
           user_id: string
           valor: number
@@ -152,9 +163,13 @@ export type Database = {
           data?: string
           descricao?: string
           fatura_data?: string | null
+          fixa?: boolean
           id?: string
           pago?: boolean
+          parcela_atual?: number | null
+          parcelas?: number | null
           tipo?: Database["public"]["Enums"]["transaction_type"]
+          transaction_parent_id?: string | null
           updated_at?: string
           user_id?: string
           valor?: number

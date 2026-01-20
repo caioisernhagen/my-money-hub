@@ -68,11 +68,12 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
 
   const loading = accountsLoading || categoriesLoading || transactionsLoading;
 
+  // Saldo calculado apenas com transações pagas
   const getAccountBalance = useCallback((id: string): number => {
     const account = accounts.find(a => a.id === id);
     if (!account) return 0;
     
-    const accountTransactions = transactions.filter(t => t.conta_id === id);
+    const accountTransactions = transactions.filter(t => t.conta_id === id && t.pago);
     const income = accountTransactions
       .filter(t => t.tipo === 'Receita')
       .reduce((sum, t) => sum + t.valor, 0);

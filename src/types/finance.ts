@@ -16,6 +16,7 @@ export interface Category {
   nome: string;
   tipo: TransactionType;
   cor: string;
+  icone?: string;
 }
 
 export interface Transaction {
@@ -30,6 +31,10 @@ export interface Transaction {
   cartao: boolean;
   cartao_id?: string | null;
   fatura_data?: string | null;
+  fixa?: boolean;
+  parcelas?: number | null;
+  parcela_atual?: number | null;
+  transaction_parent_id?: string | null;
 }
 
 export interface CreditCard {
