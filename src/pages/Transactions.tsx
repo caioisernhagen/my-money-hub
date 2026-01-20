@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
+import { MonthSelector } from '@/components/dashboard/MonthSelector';
 import {
   Dialog,
   DialogContent,
@@ -33,12 +34,13 @@ import {
   ArrowDownRight,
   Calendar,
   Loader2,
-  Receipt
+  Receipt,
+  Repeat
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Transaction, TransactionType, TransactionFilters } from '@/types/finance';
 import { toast } from 'sonner';
-import { format, addMonths, startOfMonth } from 'date-fns';
+import { format, addMonths, startOfMonth, endOfMonth, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export default function Transactions() {
@@ -61,13 +63,14 @@ export default function Transactions() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [selectedDate, setSelectedDate] = useState(new Date());
   
   const [filters, setFilters] = useState<TransactionFilters>({});
   
   const [formData, setFormData] = useState({
     descricao: '',
     valor: '',
-    data: new Date().toISOString().split('T')[0],
+    data: format(new Date(), 'yyyy-MM-dd'),
     tipo: 'Despesa' as TransactionType,
     conta_id: '',
     categoria_id: '',
@@ -75,6 +78,8 @@ export default function Transactions() {
     cartao: false,
     cartao_id: '',
     fatura_data: '',
+    fixa: false,
+    parcelas: '',
   });
 
   const formatCurrency = (value: number) => {
@@ -85,13 +90,38 @@ export default function Transactions() {
   };
 
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('pt-BR');
+    const date = parseISO(dateStr);
+    return format(date, 'dd/MM/yyyy');
   };
 
+  // Filtro por mês selecionado + filtros adicionais
   const filteredTransactions = useMemo(() => {
-    return filterTransactions(filters);
-  }, [filterTransactions, filters]);
+    const monthStart = startOfMonth(selectedDate);
+    const monthEnd = endOfMonth(selectedDate);
+    
+    const monthFilters: TransactionFilters = {
+      ...filters,
+      dataInicio: format(monthStart, 'yyyy-MM-dd'),
+      dataFim: format(monthEnd, 'yyyy-MM-dd'),
+    };
+    
+    return filterTransactions(monthFilters);
+  }, [filterTransactions, filters, selectedDate]);
+
+  // Totais
+  const totals = useMemo(() => {
+    const pago = filteredTransactions
+      .filter(t => t.pago)
+      .reduce((sum, t) => sum + (t.tipo === 'Receita' ? t.valor : -t.valor), 0);
+    
+    const pendente = filteredTransactions
+      .filter(t => !t.pago)
+      .reduce((sum, t) => sum + (t.tipo === 'Receita' ? t.valor : -t.valor), 0);
+    
+    const total = pago + pendente;
+    
+    return { pago, pendente, total };
+  }, [filteredTransactions]);
 
   const filteredCategories = useMemo(() => {
     return categories.filter(c => c.tipo === formData.tipo);
@@ -101,7 +131,7 @@ export default function Transactions() {
     setFormData({
       descricao: '',
       valor: '',
-      data: new Date().toISOString().split('T')[0],
+      data: format(new Date(), 'yyyy-MM-dd'),
       tipo: 'Despesa',
       conta_id: accounts[0]?.id || '',
       categoria_id: '',
@@ -109,22 +139,20 @@ export default function Transactions() {
       cartao: false,
       cartao_id: '',
       fatura_data: '',
+      fixa: false,
+      parcelas: '',
     });
     setEditingTransaction(null);
   };
 
-  // Gerar opções de fatura baseado na data da transação e fechamento do cartão
+  // Gerar opções de fatura
   const faturaOptions = useMemo(() => {
     if (!formData.cartao || !formData.cartao_id || !formData.data) return [];
     
     const card = creditCards.find(c => c.id === formData.cartao_id);
     if (!card) return [];
     
-    const transactionDate = new Date(formData.data);
-    const closingDay = card.data_fechamento;
-    
-    // Se a transação é antes do fechamento, vai para a fatura do mês atual
-    // Se é depois, vai para a próxima fatura
+    const transactionDate = parseISO(formData.data);
     const options: { value: string; label: string }[] = [];
     
     for (let i = 0; i < 6; i++) {
@@ -155,6 +183,8 @@ export default function Transactions() {
       cartao: transaction.cartao,
       cartao_id: transaction.cartao_id || '',
       fatura_data: transaction.fatura_data || '',
+      fixa: transaction.fixa || false,
+      parcelas: '',
     });
     setIsOpen(true);
   };
@@ -174,18 +204,20 @@ export default function Transactions() {
       cartao: formData.cartao,
       cartao_id: formData.cartao ? formData.cartao_id || null : null,
       fatura_data: formData.cartao ? formData.fatura_data || null : null,
+      fixa: formData.fixa,
+      parcelas: formData.cartao && formData.parcelas ? parseInt(formData.parcelas) : null,
     };
 
     if (editingTransaction) {
       const success = await updateTransaction(editingTransaction.id, transactionData);
       if (success) {
-        toast.success('Lançamento atualizado com sucesso!');
+        toast.success('Lançamento atualizado!');
         handleOpenChange(false);
       }
     } else {
       const result = await addTransaction(transactionData);
       if (result) {
-        toast.success('Lançamento criado com sucesso!');
+        toast.success('Lançamento criado!');
         handleOpenChange(false);
       }
     }
@@ -196,7 +228,7 @@ export default function Transactions() {
   const handleDelete = async (id: string) => {
     const success = await deleteTransaction(id);
     if (success) {
-      toast.success('Lançamento excluído com sucesso!');
+      toast.success('Lançamento excluído!');
     }
   };
 
@@ -204,16 +236,18 @@ export default function Transactions() {
     setFilters({});
   };
 
-  const hasActiveFilters = Object.values(filters).some(v => v !== undefined && v !== '');
+  const hasActiveFilters = Object.entries(filters).some(([key, v]) => 
+    key !== 'dataInicio' && key !== 'dataFim' && v !== undefined && v !== ''
+  );
 
   if (loading) {
     return (
-      <MainLayout title="Lançamentos" subtitle="Registre e gerencie suas transações financeiras">
+      <MainLayout title="Lançamentos" subtitle="Gerencie suas transações">
         <div className="stat-card pb-20 lg:pb-0">
-          <Skeleton className="h-6 w-48 mb-4" />
+          <Skeleton className="h-5 w-36 mb-4" />
           <div className="space-y-2">
             {[1, 2, 3, 4, 5].map((i) => (
-              <Skeleton key={i} className="h-20 rounded-lg" />
+              <Skeleton key={i} className="h-16 rounded-xl" />
             ))}
           </div>
         </div>
@@ -222,46 +256,67 @@ export default function Transactions() {
   }
 
   return (
-    <MainLayout title="Lançamentos" subtitle="Registre e gerencie suas transações financeiras">
-      <div className="flex flex-col sm:flex-row justify-between gap-4 mb-6">
+    <MainLayout 
+      title="Lançamentos" 
+      subtitle="Gerencie suas transações"
+      headerActions={
+        <MonthSelector 
+          selectedDate={selectedDate} 
+          onDateChange={setSelectedDate} 
+        />
+      }
+    >
+      {/* Totals */}
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="stat-card !p-3 text-center">
+          <p className="text-xs text-muted-foreground mb-1">Pago</p>
+          <p className={cn(
+            "text-sm font-semibold",
+            totals.pago >= 0 ? 'text-income' : 'text-expense'
+          )}>
+            {formatCurrency(totals.pago)}
+          </p>
+        </div>
+        <div className="stat-card !p-3 text-center">
+          <p className="text-xs text-muted-foreground mb-1">Pendente</p>
+          <p className={cn(
+            "text-sm font-semibold",
+            totals.pendente >= 0 ? 'text-income' : 'text-expense'
+          )}>
+            {formatCurrency(totals.pendente)}
+          </p>
+        </div>
+        <div className="stat-card !p-3 text-center">
+          <p className="text-xs text-muted-foreground mb-1">Total</p>
+          <p className={cn(
+            "text-sm font-semibold",
+            totals.total >= 0 ? 'text-income' : 'text-expense'
+          )}>
+            {formatCurrency(totals.total)}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row justify-between gap-3 mb-4">
         {/* Filters */}
         <div className="flex flex-wrap gap-2">
           <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <Filter className="h-4 w-4" />
+              <Button variant="outline" size="sm" className="gap-2">
+                <Filter className="h-3.5 w-3.5" />
                 Filtros
                 {hasActiveFilters && (
-                  <span className="ml-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
+                  <span className="ml-1 h-4 w-4 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
                     !
                   </span>
                 )}
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[400px]">
               <DialogHeader>
-                <DialogTitle className="font-display">Filtrar Lançamentos</DialogTitle>
+                <DialogTitle className="font-medium">Filtrar Lançamentos</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 mt-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Data Início</Label>
-                    <Input
-                      type="date"
-                      value={filters.dataInicio || ''}
-                      onChange={(e) => setFilters({ ...filters, dataInicio: e.target.value || undefined })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Data Fim</Label>
-                    <Input
-                      type="date"
-                      value={filters.dataFim || ''}
-                      onChange={(e) => setFilters({ ...filters, dataFim: e.target.value || undefined })}
-                    />
-                  </div>
-                </div>
-
                 <div className="space-y-2">
                   <Label>Conta</Label>
                   <Select
@@ -296,7 +351,7 @@ export default function Transactions() {
                       {categories.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
                           <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.cor }} />
+                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: category.cor }} />
                             {category.nome}
                           </div>
                         </SelectItem>
@@ -322,9 +377,9 @@ export default function Transactions() {
                   </Select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <Label>Status Pagamento</Label>
+                    <Label>Status</Label>
                     <Select
                       value={filters.pago === undefined ? 'all' : filters.pago ? 'true' : 'false'}
                       onValueChange={(value) => setFilters({ 
@@ -365,7 +420,7 @@ export default function Transactions() {
 
                 <div className="flex gap-2">
                   <Button variant="outline" className="flex-1" onClick={clearFilters}>
-                    Limpar Filtros
+                    Limpar
                   </Button>
                   <Button className="flex-1" onClick={() => setIsFilterOpen(false)}>
                     Aplicar
@@ -377,7 +432,7 @@ export default function Transactions() {
 
           {hasActiveFilters && (
             <Button variant="ghost" size="sm" onClick={clearFilters}>
-              <X className="h-4 w-4 mr-1" />
+              <X className="h-3.5 w-3.5 mr-1" />
               Limpar
             </Button>
           )}
@@ -385,14 +440,14 @@ export default function Transactions() {
 
         <Dialog open={isOpen} onOpenChange={handleOpenChange}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
+            <Button size="sm" className="gap-2">
               <Plus className="h-4 w-4" />
               Novo Lançamento
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[450px]">
             <DialogHeader>
-              <DialogTitle className="font-display">
+              <DialogTitle className="font-medium">
                 {editingTransaction ? 'Editar Lançamento' : 'Novo Lançamento'}
               </DialogTitle>
             </DialogHeader>
@@ -408,7 +463,7 @@ export default function Transactions() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label htmlFor="valor">Valor</Label>
                   <Input
@@ -453,7 +508,7 @@ export default function Transactions() {
                 </Select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label htmlFor="conta">Conta</Label>
                   <Select
@@ -485,7 +540,7 @@ export default function Transactions() {
                       {filteredCategories.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
                           <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.cor }} />
+                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: category.cor }} />
                             {category.nome}
                           </div>
                         </SelectItem>
@@ -495,64 +550,98 @@ export default function Transactions() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center gap-6">
                 <div className="flex items-center gap-2">
                   <Switch
                     id="pago"
                     checked={formData.pago}
                     onCheckedChange={(checked) => setFormData({ ...formData, pago: checked })}
                   />
-                  <Label htmlFor="pago">Pago</Label>
+                  <Label htmlFor="pago" className="text-sm">Pago</Label>
                 </div>
                 <div className="flex items-center gap-2">
                   <Switch
                     id="cartao"
                     checked={formData.cartao}
-                    onCheckedChange={(checked) => setFormData({ ...formData, cartao: checked, cartao_id: '', fatura_data: '' })}
+                    onCheckedChange={(checked) => setFormData({ ...formData, cartao: checked, cartao_id: '', fatura_data: '', parcelas: '' })}
                   />
-                  <Label htmlFor="cartao">Cartão de Crédito</Label>
+                  <Label htmlFor="cartao" className="text-sm">Cartão</Label>
                 </div>
+                {!editingTransaction && formData.tipo === 'Despesa' && (
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="fixa"
+                      checked={formData.fixa}
+                      onCheckedChange={(checked) => setFormData({ ...formData, fixa: checked })}
+                    />
+                    <Label htmlFor="fixa" className="text-sm">Fixa</Label>
+                  </div>
+                )}
               </div>
 
               {formData.cartao && (
-                <div className="grid grid-cols-2 gap-4 p-3 rounded-lg bg-secondary/50">
-                  <div className="space-y-2">
-                    <Label htmlFor="cartao_id">Cartão</Label>
-                    <Select
-                      value={formData.cartao_id}
-                      onValueChange={(value) => setFormData({ ...formData, cartao_id: value, fatura_data: '' })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {creditCards.map((card) => (
-                          <SelectItem key={card.id} value={card.id}>
-                            {card.descricao}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                <div className="p-3 rounded-xl bg-secondary/50 space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label>Cartão</Label>
+                      <Select
+                        value={formData.cartao_id}
+                        onValueChange={(value) => setFormData({ ...formData, cartao_id: value, fatura_data: '' })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {creditCards.map((card) => (
+                            <SelectItem key={card.id} value={card.id}>
+                              {card.descricao}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Fatura</Label>
+                      <Select
+                        value={formData.fatura_data}
+                        onValueChange={(value) => setFormData({ ...formData, fatura_data: value })}
+                        disabled={!formData.cartao_id}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {faturaOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="fatura">Fatura</Label>
-                    <Select
-                      value={formData.fatura_data}
-                      onValueChange={(value) => setFormData({ ...formData, fatura_data: value })}
-                      disabled={!formData.cartao_id}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione a fatura" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {faturaOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {!editingTransaction && (
+                    <div className="space-y-2">
+                      <Label>Parcelar em</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min="2"
+                          max="48"
+                          value={formData.parcelas}
+                          onChange={(e) => setFormData({ ...formData, parcelas: e.target.value })}
+                          placeholder="Ex: 12"
+                          className="w-24"
+                        />
+                        <span className="text-sm text-muted-foreground">vezes</span>
+                        {formData.parcelas && parseInt(formData.parcelas) > 1 && (
+                          <span className="text-xs text-muted-foreground ml-auto">
+                            {formatCurrency((parseFloat(formData.valor) || 0) / parseInt(formData.parcelas))}/parcela
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -572,19 +661,21 @@ export default function Transactions() {
       </div>
 
       {/* Transactions List */}
-      {transactions.length === 0 ? (
+      {filteredTransactions.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <Receipt className="h-16 w-16 text-muted-foreground/50 mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">Nenhum lançamento cadastrado</h3>
-          <p className="text-muted-foreground mb-4">Comece adicionando seu primeiro lançamento</p>
+          <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
+            <Receipt className="h-7 w-7 text-muted-foreground" />
+          </div>
+          <h3 className="text-base font-medium text-foreground mb-1">Nenhum lançamento</h3>
+          <p className="text-sm text-muted-foreground">Nenhum lançamento encontrado para este período</p>
         </div>
       ) : (
         <div className="stat-card pb-20 lg:pb-0">
-          <div className="text-sm text-muted-foreground mb-4">
-            {filteredTransactions.length} lançamento(s) encontrado(s)
+          <div className="text-xs text-muted-foreground mb-3">
+            {filteredTransactions.length} lançamento(s)
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {filteredTransactions.map((transaction) => {
               const category = categories.find(c => c.id === transaction.categoria_id);
               const account = accounts.find(a => a.id === transaction.conta_id);
@@ -593,97 +684,88 @@ export default function Transactions() {
               return (
                 <div
                   key={transaction.id}
-                  className="flex items-center justify-between p-4 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
+                  className="flex items-center justify-between p-3 rounded-xl bg-secondary/30 hover:bg-secondary/50 transition-colors"
                 >
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     <div className={cn(
-                      "flex h-10 w-10 items-center justify-center rounded-lg",
+                      "flex h-9 w-9 items-center justify-center rounded-xl",
                       isIncome ? 'bg-income/10' : 'bg-expense/10'
                     )}>
                       {isIncome ? (
-                        <ArrowUpRight className="h-5 w-5 text-income" />
+                        <ArrowUpRight className="h-4 w-4 text-income" />
                       ) : (
-                        <ArrowDownRight className="h-5 w-5 text-expense" />
+                        <ArrowDownRight className="h-4 w-4 text-expense" />
                       )}
                     </div>
                     
                     <div>
-                      <p className="font-medium text-foreground">{transaction.descricao}</p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <p className="font-medium text-sm text-foreground flex items-center gap-1.5">
+                        {transaction.descricao}
+                        {transaction.fixa && <Repeat className="h-3 w-3 text-muted-foreground" />}
+                      </p>
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         {category && (
                           <div className="flex items-center gap-1">
                             <div 
-                              className="w-2 h-2 rounded-full" 
+                              className="w-1.5 h-1.5 rounded-full" 
                               style={{ backgroundColor: category.cor }}
                             />
                             <span>{category.nome}</span>
                           </div>
                         )}
                         <span>•</span>
-                        <span>{account?.nome}</span>
-                        <span>•</span>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          <span>{formatDate(transaction.data)}</span>
-                        </div>
+                        <span>{formatDate(transaction.data)}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     {/* Status badges */}
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => togglePago(transaction.id)}
                         className={cn(
-                          "flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors",
+                          "flex items-center gap-1 px-1.5 py-0.5 rounded text-xs transition-colors",
                           transaction.pago 
-                            ? 'bg-income/10 text-income hover:bg-income/20' 
-                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                            ? 'bg-income/10 text-income' 
+                            : 'bg-muted text-muted-foreground'
                         )}
                       >
                         {transaction.pago ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
-                        {transaction.pago ? 'Pago' : 'Pendente'}
                       </button>
                       
-                      <button
-                        onClick={() => toggleCartao(transaction.id)}
-                        className={cn(
-                          "flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors",
-                          transaction.cartao 
-                            ? 'bg-chart-1/10 text-chart-1 hover:bg-chart-1/20' 
-                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                        )}
-                      >
-                        <CreditCard className="h-3 w-3" />
-                      </button>
+                      {transaction.cartao && (
+                        <span className="flex items-center px-1.5 py-0.5 rounded text-xs bg-chart-1/10 text-chart-1">
+                          <CreditCard className="h-3 w-3" />
+                        </span>
+                      )}
                     </div>
 
                     {/* Value */}
                     <span className={cn(
-                      "font-display font-semibold min-w-[100px] text-right",
+                      "font-semibold text-sm min-w-[80px] text-right",
                       isIncome ? 'text-income' : 'text-expense'
                     )}>
-                      {isIncome ? '+' : '-'} {formatCurrency(transaction.valor)}
+                      {isIncome ? '+' : '-'}{formatCurrency(transaction.valor)}
                     </span>
 
                     {/* Actions */}
-                    <div className="flex gap-1">
+                    <div className="flex gap-0.5">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
+                        className="h-7 w-7"
                         onClick={() => handleEdit(transaction)}
                       >
-                        <Pencil className="h-4 w-4" />
+                        <Pencil className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        className="h-7 w-7 text-destructive hover:text-destructive"
                         onClick={() => handleDelete(transaction.id)}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </div>

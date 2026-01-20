@@ -10,6 +10,7 @@ interface DbCategory {
   nome: string;
   tipo: string;
   cor: string;
+  icone: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -37,6 +38,7 @@ export function useCategories() {
         nome: cat.nome,
         tipo: cat.tipo as TransactionType,
         cor: cat.cor,
+        icone: cat.icone || 'Tag',
       })));
     }
     setLoading(false);
@@ -56,6 +58,7 @@ export function useCategories() {
         nome: category.nome,
         tipo: category.tipo,
         cor: category.cor,
+        icone: category.icone || 'Tag',
       })
       .select()
       .single();
@@ -75,6 +78,7 @@ export function useCategories() {
       nome: data.nome,
       tipo: data.tipo as TransactionType,
       cor: data.cor,
+      icone: data.icone || 'Tag',
     };
     
     setCategories(prev => [...prev, newCategory]);

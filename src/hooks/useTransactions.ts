@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Transaction, TransactionType, TransactionFilters } from '@/types/finance';
 import { toast } from 'sonner';
+import { addMonths, format } from 'date-fns';
 
 interface DbTransaction {
   id: string;
@@ -17,6 +18,10 @@ interface DbTransaction {
   cartao: boolean;
   cartao_id: string | null;
   fatura_data: string | null;
+  fixa: boolean;
+  parcelas: number | null;
+  parcela_atual: number | null;
+  transaction_parent_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -51,6 +56,10 @@ export function useTransactions() {
         cartao: t.cartao,
         cartao_id: t.cartao_id,
         fatura_data: t.fatura_data,
+        fixa: t.fixa,
+        parcelas: t.parcelas,
+        parcela_atual: t.parcela_atual,
+        transaction_parent_id: t.transaction_parent_id,
       })));
     }
     setLoading(false);
@@ -63,6 +72,70 @@ export function useTransactions() {
   const addTransaction = useCallback(async (transaction: Omit<Transaction, 'id'>) => {
     if (!user) return null;
 
+    // Se for parcelado, criar várias transações
+    if (transaction.cartao && transaction.parcelas && transaction.parcelas > 1) {
+      const valorParcela = transaction.valor / transaction.parcelas;
+      const transactionsToCreate = [];
+      
+      for (let i = 0; i < transaction.parcelas; i++) {
+        const faturaDate = transaction.fatura_data 
+          ? format(addMonths(new Date(transaction.fatura_data + 'T12:00:00'), i), 'yyyy-MM-dd')
+          : null;
+        
+        transactionsToCreate.push({
+          user_id: user.id,
+          descricao: `${transaction.descricao} (${i + 1}/${transaction.parcelas})`,
+          valor: valorParcela,
+          data: transaction.data,
+          tipo: transaction.tipo,
+          conta_id: transaction.conta_id,
+          categoria_id: transaction.categoria_id,
+          pago: transaction.pago,
+          cartao: transaction.cartao,
+          cartao_id: transaction.cartao_id || null,
+          fatura_data: faturaDate,
+          fixa: false,
+          parcelas: transaction.parcelas,
+          parcela_atual: i + 1,
+          transaction_parent_id: null,
+        });
+      }
+
+      const { data, error } = await supabase
+        .from('transactions')
+        .insert(transactionsToCreate)
+        .select();
+      
+      if (error) {
+        console.error('Error adding transactions:', error);
+        toast.error('Erro ao criar lançamentos parcelados');
+        return null;
+      }
+      
+      const newTransactions = (data as DbTransaction[]).map(t => ({
+        id: t.id,
+        descricao: t.descricao,
+        valor: Number(t.valor),
+        data: t.data,
+        tipo: t.tipo as TransactionType,
+        conta_id: t.conta_id,
+        categoria_id: t.categoria_id,
+        pago: t.pago,
+        cartao: t.cartao,
+        cartao_id: t.cartao_id,
+        fatura_data: t.fatura_data,
+        fixa: t.fixa,
+        parcelas: t.parcelas,
+        parcela_atual: t.parcela_atual,
+        transaction_parent_id: t.transaction_parent_id,
+      }));
+      
+      setTransactions(prev => [...newTransactions, ...prev]);
+      toast.success(`${transaction.parcelas} parcelas criadas com sucesso!`);
+      return newTransactions[0];
+    }
+
+    // Transação normal
     const { data, error } = await supabase
       .from('transactions')
       .insert({
@@ -77,6 +150,10 @@ export function useTransactions() {
         cartao: transaction.cartao,
         cartao_id: transaction.cartao_id || null,
         fatura_data: transaction.fatura_data || null,
+        fixa: transaction.fixa || false,
+        parcelas: null,
+        parcela_atual: null,
+        transaction_parent_id: null,
       })
       .select()
       .single();
@@ -99,6 +176,10 @@ export function useTransactions() {
       cartao: data.cartao,
       cartao_id: data.cartao_id,
       fatura_data: data.fatura_data,
+      fixa: data.fixa,
+      parcelas: data.parcelas,
+      parcela_atual: data.parcela_atual,
+      transaction_parent_id: data.transaction_parent_id,
     };
     
     setTransactions(prev => [newTransaction, ...prev]);

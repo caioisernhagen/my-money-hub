@@ -1,4 +1,6 @@
 import { Account, Category, Transaction, CreditCard } from '@/types/finance';
+import { startOfMonth, endOfMonth, format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export const mockAccounts: Account[] = [
   { id: '1', nome: 'Conta Corrente Itaú', tipo: 'Corrente', saldo_inicial: 5000, ativo: true },
@@ -8,16 +10,16 @@ export const mockAccounts: Account[] = [
 ];
 
 export const mockCategories: Category[] = [
-  { id: '1', nome: 'Salário', tipo: 'Receita', cor: '#22c55e' },
-  { id: '2', nome: 'Freelance', tipo: 'Receita', cor: '#10b981' },
-  { id: '3', nome: 'Investimentos', tipo: 'Receita', cor: '#14b8a6' },
-  { id: '4', nome: 'Alimentação', tipo: 'Despesa', cor: '#ef4444' },
-  { id: '5', nome: 'Transporte', tipo: 'Despesa', cor: '#f97316' },
-  { id: '6', nome: 'Moradia', tipo: 'Despesa', cor: '#8b5cf6' },
-  { id: '7', nome: 'Saúde', tipo: 'Despesa', cor: '#ec4899' },
-  { id: '8', nome: 'Lazer', tipo: 'Despesa', cor: '#06b6d4' },
-  { id: '9', nome: 'Educação', tipo: 'Despesa', cor: '#3b82f6' },
-  { id: '10', nome: 'Compras', tipo: 'Despesa', cor: '#f59e0b' },
+  { id: '1', nome: 'Salário', tipo: 'Receita', cor: '#22c55e', icone: 'Wallet' },
+  { id: '2', nome: 'Freelance', tipo: 'Receita', cor: '#10b981', icone: 'Briefcase' },
+  { id: '3', nome: 'Investimentos', tipo: 'Receita', cor: '#14b8a6', icone: 'TrendingUp' },
+  { id: '4', nome: 'Alimentação', tipo: 'Despesa', cor: '#ef4444', icone: 'Utensils' },
+  { id: '5', nome: 'Transporte', tipo: 'Despesa', cor: '#f97316', icone: 'Car' },
+  { id: '6', nome: 'Moradia', tipo: 'Despesa', cor: '#8b5cf6', icone: 'Home' },
+  { id: '7', nome: 'Saúde', tipo: 'Despesa', cor: '#ec4899', icone: 'Heart' },
+  { id: '8', nome: 'Lazer', tipo: 'Despesa', cor: '#06b6d4', icone: 'Gamepad2' },
+  { id: '9', nome: 'Educação', tipo: 'Despesa', cor: '#3b82f6', icone: 'GraduationCap' },
+  { id: '10', nome: 'Compras', tipo: 'Despesa', cor: '#f59e0b', icone: 'ShoppingBag' },
 ];
 
 export const mockTransactions: Transaction[] = [
@@ -26,40 +28,6 @@ export const mockTransactions: Transaction[] = [
   { id: '3', descricao: 'Supermercado', valor: 850, data: '2025-01-08', tipo: 'Despesa', conta_id: '1', categoria_id: '4', pago: true, cartao: true },
   { id: '4', descricao: 'Uber mensal', valor: 280, data: '2025-01-12', tipo: 'Despesa', conta_id: '1', categoria_id: '5', pago: true, cartao: true },
   { id: '5', descricao: 'Aluguel', valor: 2500, data: '2025-01-10', tipo: 'Despesa', conta_id: '1', categoria_id: '6', pago: true, cartao: false },
-  { id: '6', descricao: 'Academia', valor: 150, data: '2025-01-05', tipo: 'Despesa', conta_id: '1', categoria_id: '7', pago: true, cartao: true },
-  { id: '7', descricao: 'Cinema e jantar', valor: 180, data: '2025-01-14', tipo: 'Despesa', conta_id: '3', categoria_id: '8', pago: true, cartao: false },
-  { id: '8', descricao: 'Curso Udemy', valor: 89.90, data: '2025-01-03', tipo: 'Despesa', conta_id: '1', categoria_id: '9', pago: true, cartao: true },
-  { id: '9', descricao: 'Roupas', valor: 450, data: '2025-01-15', tipo: 'Despesa', conta_id: '1', categoria_id: '10', pago: false, cartao: true },
-  { id: '10', descricao: 'Dividendos', valor: 350, data: '2025-01-15', tipo: 'Receita', conta_id: '4', categoria_id: '3', pago: true, cartao: false },
-  
-  // Dezembro
-  { id: '11', descricao: 'Salário Dezembro', valor: 8500, data: '2024-12-05', tipo: 'Receita', conta_id: '1', categoria_id: '1', pago: true, cartao: false },
-  { id: '12', descricao: 'Supermercado', valor: 920, data: '2024-12-10', tipo: 'Despesa', conta_id: '1', categoria_id: '4', pago: true, cartao: true },
-  { id: '13', descricao: 'Presentes Natal', valor: 800, data: '2024-12-20', tipo: 'Despesa', conta_id: '1', categoria_id: '10', pago: true, cartao: true },
-  { id: '14', descricao: 'Aluguel', valor: 2500, data: '2024-12-10', tipo: 'Despesa', conta_id: '1', categoria_id: '6', pago: true, cartao: false },
-  
-  // Novembro
-  { id: '15', descricao: 'Salário Novembro', valor: 8500, data: '2024-11-05', tipo: 'Receita', conta_id: '1', categoria_id: '1', pago: true, cartao: false },
-  { id: '16', descricao: 'Bônus', valor: 4000, data: '2024-11-15', tipo: 'Receita', conta_id: '1', categoria_id: '1', pago: true, cartao: false },
-  { id: '17', descricao: 'Supermercado', valor: 780, data: '2024-11-12', tipo: 'Despesa', conta_id: '1', categoria_id: '4', pago: true, cartao: true },
-  { id: '18', descricao: 'Aluguel', valor: 2500, data: '2024-11-10', tipo: 'Despesa', conta_id: '1', categoria_id: '6', pago: true, cartao: false },
-  
-  // Outubro
-  { id: '19', descricao: 'Salário Outubro', valor: 8500, data: '2024-10-05', tipo: 'Receita', conta_id: '1', categoria_id: '1', pago: true, cartao: false },
-  { id: '20', descricao: 'Supermercado', valor: 850, data: '2024-10-14', tipo: 'Despesa', conta_id: '1', categoria_id: '4', pago: true, cartao: true },
-  { id: '21', descricao: 'Aluguel', valor: 2500, data: '2024-10-10', tipo: 'Despesa', conta_id: '1', categoria_id: '6', pago: true, cartao: false },
-  { id: '22', descricao: 'Viagem', valor: 1500, data: '2024-10-20', tipo: 'Despesa', conta_id: '1', categoria_id: '8', pago: true, cartao: true },
-  
-  // Setembro
-  { id: '23', descricao: 'Salário Setembro', valor: 8500, data: '2024-09-05', tipo: 'Receita', conta_id: '1', categoria_id: '1', pago: true, cartao: false },
-  { id: '24', descricao: 'Supermercado', valor: 720, data: '2024-09-08', tipo: 'Despesa', conta_id: '1', categoria_id: '4', pago: true, cartao: true },
-  { id: '25', descricao: 'Aluguel', valor: 2500, data: '2024-09-10', tipo: 'Despesa', conta_id: '1', categoria_id: '6', pago: true, cartao: false },
-  
-  // Agosto
-  { id: '26', descricao: 'Salário Agosto', valor: 8500, data: '2024-08-05', tipo: 'Receita', conta_id: '1', categoria_id: '1', pago: true, cartao: false },
-  { id: '27', descricao: 'Freelance App', valor: 5000, data: '2024-08-20', tipo: 'Receita', conta_id: '1', categoria_id: '2', pago: true, cartao: false },
-  { id: '28', descricao: 'Supermercado', valor: 800, data: '2024-08-10', tipo: 'Despesa', conta_id: '1', categoria_id: '4', pago: true, cartao: true },
-  { id: '29', descricao: 'Aluguel', valor: 2500, data: '2024-08-10', tipo: 'Despesa', conta_id: '1', categoria_id: '6', pago: true, cartao: false },
 ];
 
 export const mockCreditCards: CreditCard[] = [
@@ -74,11 +42,35 @@ export function calculateAccountBalance(account: Account, transactions: Transact
   return account.saldo_inicial + receitas - despesas;
 }
 
+export function getMonthlyDataForPeriod(
+  transactions: Transaction[], 
+  year: number, 
+  month: number
+): { receitas: number; despesas: number } {
+  const monthStart = startOfMonth(new Date(year, month));
+  const monthEnd = endOfMonth(new Date(year, month));
+  
+  const monthTransactions = transactions.filter(t => {
+    const date = new Date(t.data + 'T12:00:00');
+    return date >= monthStart && date <= monthEnd;
+  });
+  
+  const receitas = monthTransactions
+    .filter(t => t.tipo === 'Receita')
+    .reduce((sum, t) => sum + t.valor, 0);
+  
+  const despesas = monthTransactions
+    .filter(t => t.tipo === 'Despesa')
+    .reduce((sum, t) => sum + t.valor, 0);
+  
+  return { receitas, despesas };
+}
+
 export function getMonthlyData(transactions: Transaction[]): { mes: string; receitas: number; despesas: number }[] {
   const months: { [key: string]: { receitas: number; despesas: number } } = {};
   
   transactions.forEach(t => {
-    const date = new Date(t.data);
+    const date = new Date(t.data + 'T12:00:00');
     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     
     if (!months[monthKey]) {
@@ -106,13 +98,18 @@ export function getMonthlyData(transactions: Transaction[]): { mes: string; rece
   });
 }
 
-export function getCategoryExpenses(transactions: Transaction[], categories: Category[]): { categoria: string; cor: string; valor: number; percentual: number }[] {
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
+export function getCategoryExpenses(
+  transactions: Transaction[], 
+  categories: Category[],
+  selectedDate?: Date
+): { categoria: string; cor: string; valor: number; percentual: number }[] {
+  const targetDate = selectedDate || new Date();
+  const monthStart = startOfMonth(targetDate);
+  const monthEnd = endOfMonth(targetDate);
   
   const monthlyExpenses = transactions.filter(t => {
-    const date = new Date(t.data);
-    return t.tipo === 'Despesa' && date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+    const date = new Date(t.data + 'T12:00:00');
+    return t.tipo === 'Despesa' && date >= monthStart && date <= monthEnd;
   });
   
   const total = monthlyExpenses.reduce((sum, t) => sum + t.valor, 0);

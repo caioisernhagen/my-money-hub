@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,107 +6,107 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 222 47% 11%;
+    --background: 220 20% 97%;
+    --foreground: 220 30% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 220 30% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 220 30% 10%;
 
-    --primary: 222 47% 20%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 220 80% 55%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 20% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 220 15% 94%;
+    --secondary-foreground: 220 30% 20%;
 
-    --muted: 210 20% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 220 15% 94%;
+    --muted-foreground: 220 10% 50%;
 
-    --accent: 210 20% 93%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 220 80% 96%;
+    --accent-foreground: 220 80% 40%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 222 47% 20%;
+    --border: 220 15% 90%;
+    --input: 220 15% 90%;
+    --ring: 220 80% 55%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
     /* Finance specific tokens */
-    --income: 152 69% 40%;
+    --income: 160 70% 40%;
     --income-foreground: 0 0% 100%;
-    --income-muted: 152 69% 95%;
+    --income-muted: 160 70% 96%;
     
-    --expense: 0 72% 51%;
+    --expense: 0 75% 55%;
     --expense-foreground: 0 0% 100%;
-    --expense-muted: 0 72% 96%;
+    --expense-muted: 0 75% 97%;
 
-    --chart-1: 222 47% 45%;
-    --chart-2: 152 69% 40%;
-    --chart-3: 0 72% 51%;
-    --chart-4: 38 92% 50%;
-    --chart-5: 262 83% 58%;
-    --chart-6: 190 90% 50%;
+    --chart-1: 220 80% 55%;
+    --chart-2: 160 70% 40%;
+    --chart-3: 0 75% 55%;
+    --chart-4: 35 95% 50%;
+    --chart-5: 280 70% 55%;
+    --chart-6: 190 80% 45%;
 
-    --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 210 40% 98%;
-    --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 222 47% 18%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 222 47% 18%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-background: 220 30% 8%;
+    --sidebar-foreground: 220 10% 95%;
+    --sidebar-primary: 220 80% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 25% 15%;
+    --sidebar-accent-foreground: 220 10% 95%;
+    --sidebar-border: 220 25% 15%;
+    --sidebar-ring: 220 80% 55%;
   }
 
   .dark {
-    --background: 222 47% 6%;
-    --foreground: 210 40% 98%;
+    --background: 220 25% 6%;
+    --foreground: 220 10% 95%;
 
-    --card: 222 47% 9%;
-    --card-foreground: 210 40% 98%;
+    --card: 220 25% 9%;
+    --card-foreground: 220 10% 95%;
 
-    --popover: 222 47% 9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 220 25% 9%;
+    --popover-foreground: 220 10% 95%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222 47% 11%;
+    --primary: 220 80% 60%;
+    --primary-foreground: 220 25% 6%;
 
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 220 20% 15%;
+    --secondary-foreground: 220 10% 90%;
 
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 220 20% 15%;
+    --muted-foreground: 220 10% 55%;
 
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 220 25% 12%;
+    --accent-foreground: 220 80% 70%;
 
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 65% 45%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 213 27% 84%;
+    --border: 220 20% 15%;
+    --input: 220 20% 15%;
+    --ring: 220 80% 60%;
 
-    --income: 152 69% 45%;
+    --income: 160 70% 50%;
     --income-foreground: 0 0% 100%;
-    --income-muted: 152 69% 15%;
+    --income-muted: 160 50% 12%;
     
-    --expense: 0 72% 55%;
+    --expense: 0 70% 55%;
     --expense-foreground: 0 0% 100%;
-    --expense-muted: 0 72% 15%;
+    --expense-muted: 0 50% 12%;
 
-    --sidebar-background: 222 47% 6%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 210 40% 98%;
-    --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 222 47% 12%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 222 47% 12%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-background: 220 25% 4%;
+    --sidebar-foreground: 220 10% 95%;
+    --sidebar-primary: 220 80% 60%;
+    --sidebar-primary-foreground: 220 25% 6%;
+    --sidebar-accent: 220 25% 10%;
+    --sidebar-accent-foreground: 220 10% 95%;
+    --sidebar-border: 220 25% 10%;
+    --sidebar-ring: 220 80% 60%;
   }
 }
 
@@ -120,32 +120,32 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-display;
+    @apply font-display font-medium tracking-tight;
   }
 }
 
 @layer utilities {
   .glass-card {
-    @apply bg-card/80 backdrop-blur-sm border border-border/50 shadow-sm;
+    @apply bg-card border border-border/60 shadow-sm;
   }
 
   .income-badge {
-    @apply bg-income/10 text-income border-income/20;
+    @apply bg-income-muted text-income;
   }
 
   .expense-badge {
-    @apply bg-expense/10 text-expense border-expense/20;
+    @apply bg-expense-muted text-expense;
   }
 
   .stat-card {
-    @apply glass-card rounded-xl p-6 transition-all duration-200 hover:shadow-md;
+    @apply glass-card rounded-2xl p-5 transition-all duration-300;
   }
 
   .nav-link {
-    @apply flex items-center gap-3 px-4 py-3 rounded-lg text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-all duration-200;
+    @apply flex items-center gap-3 px-4 py-2.5 rounded-xl text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-all duration-200;
   }
 
   .nav-link-active {
-    @apply bg-sidebar-accent text-sidebar-foreground font-medium;
+    @apply bg-sidebar-accent text-sidebar-foreground;
   }
 }
