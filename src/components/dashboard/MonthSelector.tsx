@@ -1,14 +1,17 @@
-import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { format, addMonths, subMonths } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { format, addMonths, subMonths } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface MonthSelectorProps {
   selectedDate: Date;
   onDateChange: (date: Date) => void;
 }
 
-export function MonthSelector({ selectedDate, onDateChange }: MonthSelectorProps) {
+export function MonthSelector({
+  selectedDate,
+  onDateChange,
+}: MonthSelectorProps) {
   const handlePrevMonth = () => {
     onDateChange(subMonths(selectedDate, 1));
   };
@@ -21,30 +24,31 @@ export function MonthSelector({ selectedDate, onDateChange }: MonthSelectorProps
     onDateChange(new Date());
   };
 
-  const isCurrentMonth = format(selectedDate, 'yyyy-MM') === format(new Date(), 'yyyy-MM');
+  const isCurrentMonth =
+    format(selectedDate, "yyyy-MM") === format(new Date(), "yyyy-MM");
 
   return (
-    <div className="flex items-center gap-2">
-      <Button 
-        variant="outline" 
-        size="icon" 
+    <div className="flex w-full items-center justify-between gap-2 rounded-lg sm:w-auto sm:justify-center">
+      <Button
+        variant="outline"
+        size="icon"
         className="h-8 w-8"
         onClick={handlePrevMonth}
       >
         <ChevronLeft className="h-4 w-4" />
       </Button>
-      
+
       <Button
         variant={isCurrentMonth ? "default" : "outline"}
-        className="min-w-[140px] capitalize"
+        className="min-w-[240px] capitalize"
         onClick={handleCurrentMonth}
       >
-        {format(selectedDate, 'MMMM yyyy', { locale: ptBR })}
+        {format(selectedDate, "MMMM yyyy", { locale: ptBR })}
       </Button>
-      
-      <Button 
-        variant="outline" 
-        size="icon" 
+
+      <Button
+        variant="outline"
+        size="icon"
         className="h-8 w-8"
         onClick={handleNextMonth}
       >

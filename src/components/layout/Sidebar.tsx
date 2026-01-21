@@ -1,23 +1,23 @@
-import { NavLink } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Wallet, 
-  Tag, 
-  Receipt, 
+import { NavLink } from "react-router-dom";
+import {
+  LayoutDashboard,
+  Wallet,
+  Tag,
+  Receipt,
   CreditCard,
   TrendingUp,
-  LogOut
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
+  LogOut,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 
 const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/contas', icon: Wallet, label: 'Contas' },
-  { to: '/categorias', icon: Tag, label: 'Categorias' },
-  { to: '/lancamentos', icon: Receipt, label: 'Lançamentos' },
-  { to: '/cartoes', icon: CreditCard, label: 'Cartões' },
+  { to: "/", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/contas", icon: Wallet, label: "Contas" },
+  { to: "/categorias", icon: Tag, label: "Categorias" },
+  { to: "/cartoes", icon: CreditCard, label: "Cartões" },
+  { to: "/lancamentos", icon: Receipt, label: "Lançamentos" },
 ];
 
 export function Sidebar() {
@@ -32,8 +32,12 @@ export function Sidebar() {
             <TrendingUp className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="font-display text-lg font-bold text-sidebar-foreground">FinanceApp</h1>
-            <p className="text-xs text-sidebar-foreground/60">Controle Financeiro</p>
+            <h1 className="font-display text-lg font-bold text-sidebar-foreground">
+              FinanceApp
+            </h1>
+            <p className="text-xs text-sidebar-foreground/60">
+              Controle Financeiro
+            </p>
           </div>
         </div>
 
@@ -44,10 +48,7 @@ export function Sidebar() {
               key={item.to}
               to={item.to}
               className={({ isActive }) =>
-                cn(
-                  'nav-link',
-                  isActive && 'nav-link-active'
-                )
+                cn("nav-link", isActive && "nav-link-active")
               }
             >
               <item.icon className="h-5 w-5" />
@@ -61,9 +62,9 @@ export function Sidebar() {
           <div className="text-xs text-sidebar-foreground/60 truncate px-1">
             {user?.email}
           </div>
-          <Button 
-            variant="outline" 
-            className="w-full gap-2" 
+          <Button
+            variant="outline"
+            className="w-full gap-2"
             onClick={() => signOut()}
           >
             <LogOut className="h-4 w-4" />

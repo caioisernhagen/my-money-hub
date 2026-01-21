@@ -1,6 +1,6 @@
-import { ReactNode } from 'react';
-import { Sidebar } from './Sidebar';
-import { MobileNav } from './MobileNav';
+import { ReactNode } from "react";
+import { Sidebar } from "./Sidebar";
+import { MobileNav } from "./MobileNav";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -9,7 +9,12 @@ interface MainLayoutProps {
   headerActions?: ReactNode;
 }
 
-export function MainLayout({ children, title, subtitle, headerActions }: MainLayoutProps) {
+export function MainLayout({
+  children,
+  title,
+  subtitle,
+  headerActions,
+}: MainLayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Desktop Sidebar */}
@@ -37,17 +42,13 @@ export function MainLayout({ children, title, subtitle, headerActions }: MainLay
                 )}
               </div>
               {headerActions && (
-                <div className="flex-shrink-0">
-                  {headerActions}
-                </div>
+                <div className="flex-shrink-0">{headerActions}</div>
               )}
             </div>
           </header>
 
           {/* Content */}
-          <div className="animate-fade-in">
-            {children}
-          </div>
+          <div className="animate-fade-in">{children}</div>
         </div>
       </main>
     </div>

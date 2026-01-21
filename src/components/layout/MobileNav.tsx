@@ -1,19 +1,19 @@
-import { NavLink } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Wallet, 
-  Tag, 
-  Receipt, 
-  CreditCard 
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { NavLink } from "react-router-dom";
+import {
+  LayoutDashboard,
+  Wallet,
+  Tag,
+  Receipt,
+  CreditCard,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/contas', icon: Wallet, label: 'Contas' },
-  { to: '/categorias', icon: Tag, label: 'Categorias' },
-  { to: '/lancamentos', icon: Receipt, label: 'Lançamentos' },
-  { to: '/cartoes', icon: CreditCard, label: 'Cartões' },
+  { to: "/", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/contas", icon: Wallet, label: "Contas" },
+  { to: "/lancamentos", icon: Receipt, label: "Lançamentos" },
+  { to: "/categorias", icon: Tag, label: "Categorias" },
+  { to: "/cartoes", icon: CreditCard, label: "Cartões" },
 ];
 
 export function MobileNav() {
@@ -26,10 +26,10 @@ export function MobileNav() {
             to={item.to}
             className={({ isActive }) =>
               cn(
-                'flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors',
-                isActive 
-                  ? 'text-primary' 
-                  : 'text-muted-foreground hover:text-foreground'
+                "flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors",
+                isActive
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground",
               )
             }
           >

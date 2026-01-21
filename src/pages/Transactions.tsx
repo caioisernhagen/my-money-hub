@@ -52,6 +52,7 @@ import {
   parseISO,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import * as LucideIcons from "lucide-react";
 
 export default function Transactions() {
   const {
@@ -812,6 +813,7 @@ export default function Transactions() {
               const category = categories.find(
                 (c) => c.id === transaction.categoria_id,
               );
+              const IconeDinamico = LucideIcons[category.icone];
               const account = accounts.find(
                 (a) => a.id === transaction.conta_id,
               );
@@ -820,22 +822,13 @@ export default function Transactions() {
               return (
                 <div
                   key={transaction.id}
-                  className="flex items-center justify-between p-3 rounded-xl bg-secondary/30 hover:bg-secondary/50 transition-colors"
+                  className="flex items-center justify-between p-1.5 rounded-xl bg-secondary/30 hover:bg-secondary/50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div
-                      className={cn(
-                        "flex h-9 w-9 items-center justify-center rounded-xl",
-                        isIncome ? "bg-income/10" : "bg-expense/10",
-                      )}
-                    >
-                      {isIncome ? (
-                        <ArrowUpRight className="h-4 w-4 text-income" />
-                      ) : (
-                        <ArrowDownRight className="h-4 w-4 text-expense" />
-                      )}
-                    </div>
-
+                    <IconeDinamico
+                      className="w-4.5 h-4.5"
+                      style={{ color: category.cor }}
+                    />
                     <div>
                       <p className="font-medium text-sm text-foreground flex items-center gap-1.5">
                         {transaction.descricao}
@@ -846,10 +839,10 @@ export default function Transactions() {
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         {category && (
                           <div className="flex items-center gap-1">
-                            <div
+                            {/* <div
                               className="w-1.5 h-1.5 rounded-full"
                               style={{ backgroundColor: category.cor }}
-                            />
+                            /> */}
                             <span>{category.nome}</span>
                           </div>
                         )}
@@ -862,22 +855,6 @@ export default function Transactions() {
                   <div className="flex items-center gap-2">
                     {/* Status badges */}
                     <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => togglePago(transaction.id)}
-                        className={cn(
-                          "flex items-center gap-1 px-1.5 py-0.5 rounded text-xs transition-colors",
-                          transaction.pago
-                            ? "bg-income/10 text-income"
-                            : "bg-muted text-muted-foreground",
-                        )}
-                      >
-                        {transaction.pago ? (
-                          <Check className="h-3 w-3" />
-                        ) : (
-                          <X className="h-3 w-3" />
-                        )}
-                      </button>
-
                       {transaction.cartao && (
                         <span className="flex items-center px-1.5 py-0.5 rounded text-xs bg-chart-1/10 text-chart-1">
                           <CreditCard className="h-3 w-3" />
@@ -898,6 +875,18 @@ export default function Transactions() {
 
                     {/* Actions */}
                     <div className="flex gap-0.5">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={`h-7 w-7 transition-colors ${
+                          transaction.pago
+                            ? "text-green-500 bg-green-500/10 hover:bg-green-500/20 hover:text-green-600"
+                            : "text-red-500 bg-red-500/10 hover:bg-red-500/20 hover:text-red-600"
+                        }`}
+                        onClick={() => togglePago(transaction.id)}
+                      >
+                        <LucideIcons.Banknote className="h-3.5 w-3.5" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"

@@ -7,9 +7,10 @@ import { AccountsTable } from "@/components/dashboard/AccountsTable";
 import { BalanceProjectionChart } from "@/components/dashboard/BalanceProjectionChart";
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
 import { useFinance } from "@/contexts/FinanceContext";
-import { TrendingUp, TrendingDown, Wallet, Receipt } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, Receipt, Plus } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Button } from "@/components/ui/button";
 
 export default function Dashboard() {
   const { transactions, accounts, getAccountBalance } = useFinance();
@@ -96,15 +97,14 @@ export default function Dashboard() {
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        <RevenueExpenseChart />
+        <AccountsTable />
         <CategoryPieChart selectedDate={selectedDate} />
+        <BalanceProjectionChart />
+        <RevenueExpenseChart />
       </div>
 
       {/* Bottom Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-20 lg:pb-0">
-        <BalanceProjectionChart />
-        <AccountsTable />
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-20 lg:pb-0"></div>
     </MainLayout>
   );
 }
