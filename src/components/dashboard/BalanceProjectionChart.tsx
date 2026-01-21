@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getMonthlyDataForPeriod } from "@/lib/mockData";
 import { ptBR } from "date-fns/locale";
-import { addMonths, format, subMonths } from "date-fns";
+import { format } from "date-fns";
 
 interface ProjectionData {
   mes: string;
@@ -23,30 +23,61 @@ interface ProjectionData {
 }
 
 export function BalanceProjectionChart() {
-  const { transactions } = useFinance();
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const { transactions, accounts } = useFinance();
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
   const data = useMemo(() => {
     const months = [];
-    let saldo = 0;
-    for (let i = 0; i <= 5; i++) {
-      const date = addMonths(currentDate, i);
+    const saldo_inicial = accounts
+      .filter((t) => t.ativo)
+      .reduce((sum, t) => sum + t.saldo_inicial, 0);
+
+    // Calcular saldo base começando do início do ano anterior até o currentYear
+    let saldo_base = saldo_inicial;
+    const startYear = Math.min(currentYear, new Date().getFullYear());
+
+    // Se está vendo um ano anterior, somar transações desde o início até o final do ano anterior
+    if (currentYear < new Date().getFullYear()) {
+      for (let year = startYear; year < currentYear; year++) {
+        for (let month = 0; month < 12; month++) {
+          const monthData = getMonthlyDataForPeriod(transactions, year, month);
+          saldo_base += monthData.receitas - monthData.despesas;
+        }
+      }
+    } else if (currentYear === new Date().getFullYear()) {
+      // Se é o ano atual, somar transações até agora
+      const hoje = new Date();
+      for (let month = 0; month < hoje.getMonth(); month++) {
+        const monthData = getMonthlyDataForPeriod(
+          transactions,
+          currentYear,
+          month,
+        );
+        saldo_base += monthData.receitas - monthData.despesas;
+      }
+    }
+
+    // Projetar os 12 meses do currentYear
+    let saldo_mes = saldo_base;
+    for (let month = 0; month < 12; month++) {
       const monthData = getMonthlyDataForPeriod(
         transactions,
-        date.getFullYear(),
-        date.getMonth(),
+        currentYear,
+        month,
       );
-      saldo += monthData.receitas - monthData.despesas;
+      saldo_mes += monthData.receitas - monthData.despesas;
+      const date = new Date(currentYear, month, 1);
       months.push({
         mes: format(date, "MMM/yy", { locale: ptBR }),
-        saldo: saldo,
+        saldo: saldo_mes,
       });
     }
-    return months;
-  }, [transactions, currentDate]);
 
-  const handlePrev = () => setCurrentDate((prev) => subMonths(prev, 6));
-  const handleNext = () => setCurrentDate((prev) => addMonths(prev, 6));
+    return months;
+  }, [transactions, currentYear, accounts]);
+
+  const handlePrev = () => setCurrentYear((prev) => prev - 1);
+  const handleNext = () => setCurrentYear((prev) => prev + 1);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -64,9 +95,9 @@ export function BalanceProjectionChart() {
           <h3 className="text-lg font-display font-semibold text-foreground">
             Projeção de Saldo
           </h3>
-          <p className="text-sm text-muted-foreground">
+          {/* <p className="text-sm text-muted-foreground">
             Baseado em receitas e despesas
-          </p>
+          </p> */}
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -74,16 +105,17 @@ export function BalanceProjectionChart() {
             size="icon"
             className="h-8 w-8"
             onClick={handlePrev}
-            //disabled={!canGoBack}
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
+          <span className="w-12 text-center font-semibold text-foreground">
+            {currentYear}
+          </span>
           <Button
             variant="outline"
             size="icon"
             className="h-8 w-8"
             onClick={handleNext}
-            //disabled={!canGoForward}
           >
             <ChevronRight className="h-4 w-4" />
           </Button>

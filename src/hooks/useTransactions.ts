@@ -42,10 +42,8 @@ export function useTransactions() {
     const { data, error } = await supabase
       .from("transactions")
       .select("*")
-      .order("data", { ascending: false });
-
+      .order("data", { ascending: true });
     if (error) {
-      console.error("Error fetching transactions:", error);
       toast.error("Erro ao carregar lançamentos");
     } else {
       setTransactions(

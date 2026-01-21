@@ -385,17 +385,27 @@ export default function Transactions() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todas as categorias</SelectItem>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="w-2.5 h-2.5 rounded-full"
-                              style={{ backgroundColor: category.cor }}
-                            />
-                            {category.nome}
-                          </div>
-                        </SelectItem>
-                      ))}
+                      {filteredCategories.map((category) => {
+                        const IconeCategoria = LucideIcons[category.icone];
+                        return (
+                          <SelectItem key={category.id} value={category.id}>
+                            <div className="flex items-center gap-3">
+                              <div
+                                className="flex items-center justify-center w-7 h-7 rounded-md"
+                                style={{ backgroundColor: `${category.cor}1A` }}
+                              >
+                                <IconeCategoria
+                                  size={16}
+                                  style={{ color: category.cor }}
+                                />
+                              </div>
+                              <span className="text-sm font-medium">
+                                {category.nome}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
@@ -419,8 +429,22 @@ export default function Transactions() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos os tipos</SelectItem>
-                      <SelectItem value="Receita">Receita</SelectItem>
-                      <SelectItem value="Despesa">Despesa</SelectItem>
+                      <SelectItem value="Receita">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-income/10">
+                            <ArrowUpRight className="h-4 w-4 text-income" />
+                          </div>
+                          Receita
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="Despesa">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-expense/10">
+                            <ArrowDownRight className="h-4 w-4 text-expense" />
+                          </div>
+                          Despesa
+                        </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -582,8 +606,22 @@ export default function Transactions() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Receita">Receita</SelectItem>
-                    <SelectItem value="Despesa">Despesa</SelectItem>
+                    <SelectItem value="Receita">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-income/10">
+                          <ArrowUpRight className="h-4 w-4 text-income" />
+                        </div>
+                        Receita
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Despesa">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-expense/10">
+                          <ArrowDownRight className="h-4 w-4 text-expense" />
+                        </div>
+                        Despesa
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -624,14 +662,10 @@ export default function Transactions() {
                     </SelectTrigger>
                     <SelectContent>
                       {filteredCategories.map((category) => {
-                        // 1. Transformamos a string/referência em um Componente (Letra Maiúscula)
-                        const IconeCategoria =
-                          LucideIcons[category.icone] || LucideIcons.HelpCircle;
-
+                        const IconeCategoria = LucideIcons[category.icone];
                         return (
                           <SelectItem key={category.id} value={category.id}>
                             <div className="flex items-center gap-3">
-                              {/* 2. Container do ícone com o fundo colorido e opacidade */}
                               <div
                                 className="flex items-center justify-center w-7 h-7 rounded-md"
                                 style={{ backgroundColor: `${category.cor}1A` }}
@@ -641,8 +675,6 @@ export default function Transactions() {
                                   style={{ color: category.cor }}
                                 />
                               </div>
-
-                              {/* 3. Nome da categoria */}
                               <span className="text-sm font-medium">
                                 {category.nome}
                               </span>
@@ -829,7 +861,7 @@ export default function Transactions() {
               const category = categories.find(
                 (c) => c.id === transaction.categoria_id,
               );
-              const IconeDinamico = LucideIcons[category.icone];
+              const IconeCategoria = LucideIcons[category.icone];
               const account = accounts.find(
                 (a) => a.id === transaction.conta_id,
               );
@@ -841,10 +873,16 @@ export default function Transactions() {
                   className="flex items-center justify-between p-1.5 rounded-xl bg-secondary/30 hover:bg-secondary/50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <IconeDinamico
-                      className="w-4.5 h-4.5"
-                      style={{ color: category.cor }}
-                    />
+                    <div
+                      className="flex items-center justify-center w-7 h-7 rounded-md"
+                      style={{ backgroundColor: `${category.cor}3A` }}
+                    >
+                      <IconeCategoria
+                        size={16}
+                        style={{ color: category.cor }}
+                      />
+                    </div>
+
                     <div>
                       <p className="font-medium text-sm text-foreground flex items-center gap-1.5">
                         {transaction.descricao}
