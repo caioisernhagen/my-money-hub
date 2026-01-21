@@ -42,7 +42,7 @@ export function useTransactions() {
     const { data, error } = await supabase
       .from("transactions")
       .select("*")
-      .order("data", { ascending: true });
+      .order("data,categoria_id", { ascending: true });
     if (error) {
       toast.error("Erro ao carregar lançamentos");
     } else {
@@ -209,7 +209,14 @@ export function useTransactions() {
   );
 
   const updateTransaction = useCallback(
-    async (id: string, updates: Partial<Transaction>) => {
+    async (id: string, updates: Partial<Transaction>, action: string) => {
+      let idsToUpdate = [id];
+      const { data: findRow } = await supabase
+        .from("transactions")
+        .select()
+        .eq("id", id)
+        .single();
+
       const { error } = await supabase
         .from("transactions")
         .update(updates)
@@ -219,18 +226,77 @@ export function useTransactions() {
         console.error("Error updating transaction:", error);
         toast.error("Erro ao atualizar lançamento");
         return false;
+      } else if (action !== "salvar") {
+        let query = supabase
+          .from("transactions")
+          .select()
+          .eq("conta_id", findRow.conta_id)
+          .eq("descricao", findRow.descricao)
+          .eq("tipo", findRow.tipo);
+
+        query =
+          action === "salvar-futuras"
+            ? query.gt("data", findRow.data)
+            : query.eq("pago", false);
+        const { data: dados } = await query;
+        idsToUpdate = [id, ...(dados?.map((t) => t.id) || [])];
+
+        delete updates.data;
+
+        const { error } = await supabase
+          .from("transactions")
+          .update(updates)
+          .in("id", idsToUpdate);
+
+        if (error) {
+          console.error("Error updating transaction:", error);
+          toast.error("Erro ao atualizar lançamento");
+          return false;
+        }
       }
 
       setTransactions((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+        prev.map((t) =>
+          idsToUpdate.includes(t.id) ? { ...t, ...updates } : t,
+        ),
       );
       return true;
     },
     [],
   );
 
-  const deleteTransaction = useCallback(async (id: string) => {
-    const { error } = await supabase.from("transactions").delete().eq("id", id);
+  const deleteTransaction = useCallback(async (id: string, action: string) => {
+    const { data: findRow } = await supabase
+      .from("transactions")
+      .select()
+      .eq("id", id)
+      .single();
+
+    if (!findRow) return false;
+
+    let idsToDelete = [id];
+
+    if (action !== "deletar") {
+      let query = supabase
+        .from("transactions")
+        .select()
+        .eq("conta_id", findRow.conta_id)
+        .eq("descricao", findRow.descricao)
+        .eq("tipo", findRow.tipo);
+
+      query =
+        action === "deletar-futuras"
+          ? query.gt("data", findRow.data)
+          : query.eq("pago", false);
+
+      const { data: dados } = await query;
+      idsToDelete = [id, ...(dados?.map((t) => t.id) || [])];
+    }
+
+    const { error } = await supabase
+      .from("transactions")
+      .delete()
+      .in("id", idsToDelete);
 
     if (error) {
       console.error("Error deleting transaction:", error);
@@ -238,7 +304,7 @@ export function useTransactions() {
       return false;
     }
 
-    setTransactions((prev) => prev.filter((t) => t.id !== id));
+    setTransactions((prev) => prev.filter((t) => !idsToDelete.includes(t.id)));
     return true;
   }, []);
 
@@ -247,7 +313,7 @@ export function useTransactions() {
       const transaction = transactions.find((t) => t.id === id);
       if (!transaction) return;
 
-      await updateTransaction(id, { pago: !transaction.pago });
+      await updateTransaction(id, { pago: !transaction.pago }, "salvar");
     },
     [transactions, updateTransaction],
   );
@@ -257,7 +323,7 @@ export function useTransactions() {
       const transaction = transactions.find((t) => t.id === id);
       if (!transaction) return;
 
-      await updateTransaction(id, { cartao: !transaction.cartao });
+      await updateTransaction(id, { cartao: !transaction.cartao }, "salvar");
     },
     [transactions, updateTransaction],
   );

@@ -33,8 +33,9 @@ interface FinanceContextType {
   updateTransaction: (
     id: string,
     transaction: Partial<Transaction>,
+    action?: string | null,
   ) => Promise<boolean>;
-  deleteTransaction: (id: string) => Promise<boolean>;
+  deleteTransaction: (id: string, action: string) => Promise<boolean>;
   togglePago: (id: string) => Promise<void>;
   toggleCartao: (id: string) => Promise<void>;
   filterTransactions: (filters: TransactionFilters) => Transaction[];

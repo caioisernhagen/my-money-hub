@@ -16,6 +16,15 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -38,6 +47,7 @@ import {
   Repeat,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { IconBackground } from "@/components/IconBackground";
 import {
   Transaction,
   TransactionType,
@@ -76,6 +86,9 @@ export default function Transactions() {
   const [editingTransaction, setEditingTransaction] =
     useState<Transaction | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] =
+    useState<Transaction | null>(null);
 
   const [filters, setFilters] = useState<TransactionFilters>({});
 
@@ -205,6 +218,11 @@ export default function Transactions() {
     e.preventDefault();
     setIsSubmitting(true);
 
+    // Identificar qual botão foi clicado
+    const submitter = (e.nativeEvent as SubmitEvent)
+      .submitter as HTMLButtonElement;
+    const action = submitter?.value || "salvar";
+
     const transactionData = {
       descricao: formData.descricao,
       valor: parseFloat(formData.valor) || 0,
@@ -227,6 +245,7 @@ export default function Transactions() {
       const success = await updateTransaction(
         editingTransaction.id,
         transactionData,
+        action,
       );
       if (success) {
         toast.success("Lançamento atualizado!");
@@ -243,10 +262,22 @@ export default function Transactions() {
     setIsSubmitting(false);
   };
 
-  const handleDelete = async (id: string) => {
-    const success = await deleteTransaction(id);
+  const handleDeleteClick = (transaction: Transaction) => {
+    setTransactionToDelete(transaction);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async (action: "deletar" | "deletar-futuras" | "deletar-pendentes") => {
+    if (!transactionToDelete) return;
+
+    const success = await deleteTransaction(
+      transactionToDelete.id,
+      action,
+    );
     if (success) {
-      toast.success("Lançamento excluído!");
+      toast.success("Lançamento(s) excluído(s)!");
+      setDeleteConfirmOpen(false);
+      setTransactionToDelete(null);
     }
   };
 
@@ -386,23 +417,13 @@ export default function Transactions() {
                     <SelectContent>
                       <SelectItem value="all">Todas as categorias</SelectItem>
                       {filteredCategories.map((category) => {
-                        const IconeCategoria = LucideIcons[category.icone];
                         return (
                           <SelectItem key={category.id} value={category.id}>
-                            <div className="flex items-center gap-3">
-                              <div
-                                className="flex items-center justify-center w-7 h-7 rounded-md"
-                                style={{ backgroundColor: `${category.cor}1A` }}
-                              >
-                                <IconeCategoria
-                                  size={16}
-                                  style={{ color: category.cor }}
-                                />
-                              </div>
-                              <span className="text-sm font-medium">
-                                {category.nome}
-                              </span>
-                            </div>
+                            <IconBackground
+                              icon={category.icone as keyof typeof LucideIcons}
+                              color={category.cor}
+                              text={category.nome}
+                            />
                           </SelectItem>
                         );
                       })}
@@ -430,20 +451,18 @@ export default function Transactions() {
                     <SelectContent>
                       <SelectItem value="all">Todos os tipos</SelectItem>
                       <SelectItem value="Receita">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-income/10">
-                            <ArrowUpRight className="h-4 w-4 text-income" />
-                          </div>
-                          Receita
-                        </div>
+                        <IconBackground
+                          icon="ArrowUpRight"
+                          color="#008000"
+                          text="Receita"
+                        />
                       </SelectItem>
                       <SelectItem value="Despesa">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-expense/10">
-                            <ArrowDownRight className="h-4 w-4 text-expense" />
-                          </div>
-                          Despesa
-                        </div>
+                        <IconBackground
+                          icon="ArrowDownRight"
+                          color="#e24a4b"
+                          text="Despesa"
+                        />
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -607,20 +626,18 @@ export default function Transactions() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Receita">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-income/10">
-                          <ArrowUpRight className="h-4 w-4 text-income" />
-                        </div>
-                        Receita
-                      </div>
+                      <IconBackground
+                        icon="ArrowUpRight"
+                        color="#008000"
+                        text="Receita"
+                      />
                     </SelectItem>
                     <SelectItem value="Despesa">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-expense/10">
-                          <ArrowDownRight className="h-4 w-4 text-expense" />
-                        </div>
-                        Despesa
-                      </div>
+                      <IconBackground
+                        icon="ArrowDownRight"
+                        color="#e24a4b"
+                        text="Despesa"
+                      />
                     </SelectItem>
                   </SelectContent>
                 </Select>
@@ -662,23 +679,13 @@ export default function Transactions() {
                     </SelectTrigger>
                     <SelectContent>
                       {filteredCategories.map((category) => {
-                        const IconeCategoria = LucideIcons[category.icone];
                         return (
                           <SelectItem key={category.id} value={category.id}>
-                            <div className="flex items-center gap-3">
-                              <div
-                                className="flex items-center justify-center w-7 h-7 rounded-md"
-                                style={{ backgroundColor: `${category.cor}1A` }}
-                              >
-                                <IconeCategoria
-                                  size={16}
-                                  style={{ color: category.cor }}
-                                />
-                              </div>
-                              <span className="text-sm font-medium">
-                                {category.nome}
-                              </span>
-                            </div>
+                            <IconBackground
+                              icon={category.icone as keyof typeof LucideIcons}
+                              color={category.cor}
+                              text={category.nome}
+                            />
                           </SelectItem>
                         );
                       })}
@@ -819,19 +826,74 @@ export default function Transactions() {
                   )}
                 </div>
               )}
-
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : editingTransaction ? (
-                  "Salvar Alterações"
-                ) : (
-                  "Criar Lançamento"
-                )}
-              </Button>
+              {!editingTransaction && (
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    "Criar Lançamento"
+                  )}
+                </Button>
+              )}
+              {editingTransaction && (
+                <div className="flex gap-2 justify-center">
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={isSubmitting}
+                    className="flex-1"
+                    value="salvar"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Salvando...
+                      </>
+                    ) : (
+                      "Salvar"
+                    )}
+                  </Button>
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={isSubmitting}
+                    className="flex-1"
+                    value="salvar-futuras"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Salvando...
+                      </>
+                    ) : (
+                      "Salvar futuras"
+                    )}
+                  </Button>
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={isSubmitting}
+                    className="flex-1"
+                    value="salvar-pendentes"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Salvando...
+                      </>
+                    ) : (
+                      "Salvar pendentes"
+                    )}
+                  </Button>
+                </div>
+              )}
             </form>
           </DialogContent>
         </Dialog>
@@ -861,7 +923,6 @@ export default function Transactions() {
               const category = categories.find(
                 (c) => c.id === transaction.categoria_id,
               );
-              const IconeCategoria = LucideIcons[category.icone];
               const account = accounts.find(
                 (a) => a.id === transaction.conta_id,
               );
@@ -873,15 +934,11 @@ export default function Transactions() {
                   className="flex items-center justify-between p-1.5 rounded-xl bg-secondary/30 hover:bg-secondary/50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div
-                      className="flex items-center justify-center w-7 h-7 rounded-md"
-                      style={{ backgroundColor: `${category.cor}3A` }}
-                    >
-                      <IconeCategoria
-                        size={16}
-                        style={{ color: category.cor }}
-                      />
-                    </div>
+                    <IconBackground
+                      icon={category.icone as keyof typeof LucideIcons}
+                      color={category.cor}
+                      text=""
+                    />
 
                     <div>
                       <p className="font-medium text-sm text-foreground flex items-center gap-1.5">
@@ -935,16 +992,16 @@ export default function Transactions() {
                         className={`h-7 w-7 transition-colors ${
                           transaction.pago
                             ? "text-green-500 bg-green-500/10 hover:bg-green-500/20 hover:text-green-600"
-                            : "text-red-500 bg-red-500/10 hover:bg-red-500/20 hover:text-red-600"
+                            : "text-gray-500 bg-v-500/10 hover:bg-gray-500/20 hover:text-gray-600"
                         }`}
                         onClick={() => togglePago(transaction.id)}
                       >
-                        <LucideIcons.Banknote className="h-3.5 w-3.5" />
+                        <LucideIcons.CircleDollarSignIcon className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7"
+                        className="h-7 w-7 transition-colors text-blue-500 bg-blue-500/10 hover:bg-blue-500/20 hover:text-blue-600"
                         onClick={() => handleEdit(transaction)}
                       >
                         <Pencil className="h-3.5 w-3.5" />
@@ -952,8 +1009,8 @@ export default function Transactions() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 text-destructive hover:text-destructive"
-                        onClick={() => handleDelete(transaction.id)}
+                        className="h-7 w-7 transition-colors text-red-500 bg-red-500/10 hover:bg-red-500/20 hover:text-red-600"
+                        onClick={() => handleDeleteClick(transaction)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
@@ -965,6 +1022,39 @@ export default function Transactions() {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent className="sm:max-w-[400px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              O que deseja fazer com "{transactionToDelete?.descricao}"?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex flex-col gap-2">
+            <Button
+              variant="destructive"
+              onClick={() => handleDeleteConfirm("deletar")}
+            >
+              Deletar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => handleDeleteConfirm("deletar-futuras")}
+            >
+              Deletar futuras
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => handleDeleteConfirm("deletar-pendentes")}
+            >
+              Deletar pendentes
+            </Button>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 }
