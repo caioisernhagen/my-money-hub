@@ -623,17 +623,33 @@ export default function Transactions() {
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent>
-                      {filteredCategories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="w-2.5 h-2.5 rounded-full"
-                              style={{ backgroundColor: category.cor }}
-                            />
-                            {category.nome}
-                          </div>
-                        </SelectItem>
-                      ))}
+                      {filteredCategories.map((category) => {
+                        // 1. Transformamos a string/referência em um Componente (Letra Maiúscula)
+                        const IconeCategoria =
+                          LucideIcons[category.icone] || LucideIcons.HelpCircle;
+
+                        return (
+                          <SelectItem key={category.id} value={category.id}>
+                            <div className="flex items-center gap-3">
+                              {/* 2. Container do ícone com o fundo colorido e opacidade */}
+                              <div
+                                className="flex items-center justify-center w-7 h-7 rounded-md"
+                                style={{ backgroundColor: `${category.cor}1A` }}
+                              >
+                                <IconeCategoria
+                                  size={16}
+                                  style={{ color: category.cor }}
+                                />
+                              </div>
+
+                              {/* 3. Nome da categoria */}
+                              <span className="text-sm font-medium">
+                                {category.nome}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
