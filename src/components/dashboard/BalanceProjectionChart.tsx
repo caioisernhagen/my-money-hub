@@ -28,20 +28,18 @@ export function BalanceProjectionChart() {
 
   const data = useMemo(() => {
     const months = [];
-    const saldo_inicial = accounts
+    let saldo = accounts
       .filter((t) => t.ativo)
       .reduce((sum, t) => sum + t.saldo_inicial, 0);
 
-    // Calcular saldo base começando do início do ano anterior até o currentYear
-    let saldo_base = saldo_inicial;
     const startYear = Math.min(currentYear, new Date().getFullYear());
 
     // Se está vendo um ano anterior, somar transações desde o início até o final do ano anterior
-    if (currentYear < new Date().getFullYear()) {
+    if (currentYear > new Date().getFullYear()) {
       for (let year = startYear; year < currentYear; year++) {
         for (let month = 0; month < 12; month++) {
           const monthData = getMonthlyDataForPeriod(transactions, year, month);
-          saldo_base += monthData.receitas - monthData.despesas;
+          saldo += monthData.receitas - monthData.despesas;
         }
       }
     } else if (currentYear === new Date().getFullYear()) {
@@ -53,26 +51,24 @@ export function BalanceProjectionChart() {
           currentYear,
           month,
         );
-        saldo_base += monthData.receitas - monthData.despesas;
+        saldo += monthData.receitas - monthData.despesas;
       }
     }
 
     // Projetar os 12 meses do currentYear
-    let saldo_mes = saldo_base;
     for (let month = 0; month < 12; month++) {
       const monthData = getMonthlyDataForPeriod(
         transactions,
         currentYear,
         month,
       );
-      saldo_mes += monthData.receitas - monthData.despesas;
+      saldo += monthData.receitas - monthData.despesas;
       const date = new Date(currentYear, month, 1);
       months.push({
         mes: format(date, "MMM/yy", { locale: ptBR }),
-        saldo: saldo_mes,
+        saldo: saldo,
       });
     }
-
     return months;
   }, [transactions, currentYear, accounts]);
 

@@ -114,6 +114,28 @@ export default function Transactions() {
     }).format(value);
   };
 
+  const handleValorBlur = () => {
+    // Ao perder foco, tenta avaliar a expressão
+    if (/[\+\-\*\/]/.test(formData.valor)) {
+      try {
+        // Valida que contém apenas números, operadores e espaços
+        if (!/^[\d\s\+\-\*\/\.]+$/.test(formData.valor)) {
+          return;
+        }
+        // Avalia a expressão
+        const result = Function(
+          '"use strict"; return (' + formData.valor + ")",
+        )();
+        // Se resultado é um número válido, usa o resultado
+        if (typeof result === "number" && !isNaN(result)) {
+          setFormData({ ...formData, valor: result.toString() });
+        }
+      } catch {
+        // Se há erro na avaliação, mantém o valor como está
+      }
+    }
+  };
+
   const formatDate = (dateStr: string) => {
     const date = parseISO(dateStr);
     return format(date, "dd/MM/yyyy");
@@ -267,13 +289,12 @@ export default function Transactions() {
     setDeleteConfirmOpen(true);
   };
 
-  const handleDeleteConfirm = async (action: "deletar" | "deletar-futuras" | "deletar-pendentes") => {
+  const handleDeleteConfirm = async (
+    action: "deletar" | "deletar-futuras" | "deletar-pendentes",
+  ) => {
     if (!transactionToDelete) return;
 
-    const success = await deleteTransaction(
-      transactionToDelete.id,
-      action,
-    );
+    const success = await deleteTransaction(transactionToDelete.id, action);
     if (success) {
       toast.success("Lançamento(s) excluído(s)!");
       setDeleteConfirmOpen(false);
@@ -585,12 +606,12 @@ export default function Transactions() {
                   <Label htmlFor="valor">Valor</Label>
                   <Input
                     id="valor"
-                    type="number"
                     step="0.01"
                     value={formData.valor}
                     onChange={(e) =>
                       setFormData({ ...formData, valor: e.target.value })
                     }
+                    onBlur={handleValorBlur}
                     placeholder="0,00"
                     required
                   />
@@ -620,6 +641,7 @@ export default function Transactions() {
                       categoria_id: "",
                     })
                   }
+                  required
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -651,6 +673,7 @@ export default function Transactions() {
                     onValueChange={(value) =>
                       setFormData({ ...formData, conta_id: value })
                     }
+                    required
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione" />
@@ -673,6 +696,7 @@ export default function Transactions() {
                     onValueChange={(value) =>
                       setFormData({ ...formData, categoria_id: value })
                     }
+                    required
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione" />
@@ -735,7 +759,7 @@ export default function Transactions() {
                       }
                     />
                     <Label htmlFor="fixa" className="text-sm">
-                      Fixa
+                      Repetir (36x)
                     </Label>
                   </div>
                 )}
@@ -941,23 +965,19 @@ export default function Transactions() {
                     />
 
                     <div>
-                      <p className="font-medium text-sm text-foreground flex items-center gap-1.5">
+                      <p className="font-medium text-xs text-foreground flex items-center gap-1.5">
                         {transaction.descricao}
                         {transaction.fixa && (
                           <Repeat className="h-3 w-3 text-muted-foreground" />
                         )}
                       </p>
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 text-xs text-muted-foreground">
                         {category && (
                           <div className="flex items-center gap-1">
-                            {/* <div
-                              className="w-1.5 h-1.5 rounded-full"
-                              style={{ backgroundColor: category.cor }}
-                            /> */}
                             <span>{category.nome}</span>
                           </div>
                         )}
-                        <span>•</span>
+                        <span className="hidden sm:inline">•</span>
                         <span>{formatDate(transaction.data)}</span>
                       </div>
                     </div>
@@ -976,7 +996,7 @@ export default function Transactions() {
                     {/* Value */}
                     <span
                       className={cn(
-                        "font-semibold text-sm min-w-[80px] text-right",
+                        "font-semibold text-xs min-w-[80px] text-right",
                         isIncome ? "text-income" : "text-expense",
                       )}
                     >
@@ -989,10 +1009,11 @@ export default function Transactions() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        title={transaction.pago ? "Estornar" : "Pagar"}
                         className={`h-7 w-7 transition-colors ${
                           transaction.pago
                             ? "text-green-500 bg-green-500/10 hover:bg-green-500/20 hover:text-green-600"
-                            : "text-gray-500 bg-v-500/10 hover:bg-gray-500/20 hover:text-gray-600"
+                            : "text-gray-500 bg-gray-500/10 hover:bg-gray-500/20 hover:text-gray-600"
                         }`}
                         onClick={() => togglePago(transaction.id)}
                       >
@@ -1001,6 +1022,7 @@ export default function Transactions() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        title="Editar"
                         className="h-7 w-7 transition-colors text-blue-500 bg-blue-500/10 hover:bg-blue-500/20 hover:text-blue-600"
                         onClick={() => handleEdit(transaction)}
                       >
@@ -1009,6 +1031,7 @@ export default function Transactions() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        title="Deletar"
                         className="h-7 w-7 transition-colors text-red-500 bg-red-500/10 hover:bg-red-500/20 hover:text-red-600"
                         onClick={() => handleDeleteClick(transaction)}
                       >
