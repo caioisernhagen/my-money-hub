@@ -51,14 +51,16 @@ export function AccountsTable() {
           return (
             <div
               key={account.id}
-              className="flex items-center justify-between p-4 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
+              className="flex items-center justify-between p-2.5 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
             >
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                   <Icon className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">{account.nome}</p>
+                  <p className="font-medium text-foreground text-sm">
+                    {account.nome}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {account.tipo}
                   </p>
