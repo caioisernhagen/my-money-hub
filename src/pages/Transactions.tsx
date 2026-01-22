@@ -937,7 +937,7 @@ export default function Transactions() {
           </p>
         </div>
       ) : (
-        <div className="stat-card pb-20 lg:pb-0">
+        <div className="stat-card">
           <div className="text-xs text-muted-foreground mb-3">
             {filteredTransactions.length} lançamento(s)
           </div>
@@ -955,7 +955,7 @@ export default function Transactions() {
               return (
                 <div
                   key={transaction.id}
-                  className="flex items-center justify-between p-1.5 rounded-xl bg-secondary/30 hover:bg-secondary/50 transition-colors"
+                  className="flex items-center justify-between p-1.5 rounded-xl bg-secondary/30 hover:bg-secondary/90 transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <IconBackground
