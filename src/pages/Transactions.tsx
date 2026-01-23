@@ -480,13 +480,24 @@ export default function Transactions() {
         <div className="flex flex-col gap-3 mb-4">
           {/* Top Bar - Busca, Ordenação e Filtros */}
           <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center sm:justify-between">
-            {/* Busca */}
-            <Input
-              placeholder="Buscar por descrição"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-9 w-full text-sm stat-card"
-            />
+            {/* Busca com botão interno */}
+            <div className="relative w-full sm:flex-1">
+              <Input
+                placeholder="Buscar por descrição"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="h-9 w-full text-sm stat-card pr-9"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  title="Limpar busca"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
 
             {/* Ordenação */}
             <Select
@@ -506,10 +517,11 @@ export default function Transactions() {
 
             {/* Botão Filtros */}
             <Button
-              variant={hasActiveFilters ? "default" : "outline"}
+              variant="outline"
+              //variant={hasActiveFilters ? "ghost" : "outline"}
               size="sm"
               onClick={() => setShowFilters(!showFilters)}
-              className="gap-2 stat-card"
+              className={`gap-2 stat-card ${hasActiveFilters ? "transition-colors text-red-500" : ""}`}
             >
               <ChevronDown
                 className={`h-4 w-4 transition-transform ${
@@ -517,11 +529,11 @@ export default function Transactions() {
                 }`}
               />
               Filtros
-              {hasActiveFilters && (
+              {/* {hasActiveFilters && (
                 <span className="ml-1 h-4 w-4 rounded-full bg-primary-foreground text-primary text-xs flex items-center justify-center">
                   !
                 </span>
-              )}
+              )} */}
             </Button>
 
             {/* Novo Lançamento - Desktop */}
