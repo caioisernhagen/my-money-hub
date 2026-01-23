@@ -1,6 +1,11 @@
-export type TransactionType = 'Receita' | 'Despesa';
+export type TransactionType = "Receita" | "Despesa";
 
-export type AccountType = 'Corrente' | 'Poupança' | 'Investimento' | 'Carteira' | 'Outro';
+export type AccountType =
+  | "Corrente"
+  | "Poupança"
+  | "Investimento"
+  | "Carteira"
+  | "Outro";
 
 export interface Account {
   id: string;
@@ -52,7 +57,7 @@ export interface TransactionFilters {
   categoria_id?: string;
   tipo?: TransactionType;
   pago?: boolean;
-  cartao?: boolean;
+  cartao_id?: string;
 }
 
 export interface MonthlyData {

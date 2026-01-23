@@ -35,7 +35,6 @@ import {
   Plus,
   Pencil,
   Trash2,
-  Filter,
   CreditCard,
   Check,
   X,
@@ -45,6 +44,7 @@ import {
   Loader2,
   Receipt,
   Repeat,
+  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { IconBackground } from "@/components/IconBackground";
@@ -81,7 +81,6 @@ export default function Transactions() {
   const { creditCards } = useCreditCards();
 
   const [isOpen, setIsOpen] = useState(false);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingTransaction, setEditingTransaction] =
     useState<Transaction | null>(null);
@@ -91,6 +90,11 @@ export default function Transactions() {
     useState<Transaction | null>(null);
 
   const [filters, setFilters] = useState<TransactionFilters>({});
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState<
+    "data-za" | "data-az" | "descricao-az" | "descricao-za"
+  >("data-az");
+  const [showFilters, setShowFilters] = useState(false);
 
   const [formData, setFormData] = useState({
     descricao: "",
@@ -141,7 +145,7 @@ export default function Transactions() {
     return format(date, "dd/MM/yyyy");
   };
 
-  // Filtro por mês selecionado + filtros adicionais
+  // Filtro por mês selecionado + filtros adicionais + busca + ordenação
   const filteredTransactions = useMemo(() => {
     const monthStart = startOfMonth(selectedDate);
     const monthEnd = endOfMonth(selectedDate);
@@ -152,8 +156,39 @@ export default function Transactions() {
       dataFim: format(monthEnd, "yyyy-MM-dd"),
     };
 
-    return filterTransactions(monthFilters);
-  }, [filterTransactions, filters, selectedDate]);
+    let transactions = filterTransactions(monthFilters);
+
+    // Aplicar busca por descrição
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
+      transactions = transactions.filter((t) =>
+        t.descricao.toLowerCase().includes(searchLower),
+      );
+    }
+
+    // Aplicar ordenação
+    if (sortBy === "descricao-az") {
+      transactions = transactions.sort((a, b) =>
+        a.descricao.localeCompare(b.descricao),
+      );
+    } else if (sortBy === "descricao-za") {
+      transactions = transactions.sort((a, b) =>
+        b.descricao.localeCompare(a.descricao),
+      );
+    } else if (sortBy === "data-za") {
+      // Por data (ascendente - do menor para maior)
+      transactions = transactions.sort(
+        (a, b) => new Date(b.data).getTime() - new Date(a.data).getTime(),
+      );
+    } else if (sortBy === "data-az") {
+      // Por data (descendente - do maior para menor)
+      transactions = transactions.sort(
+        (a, b) => new Date(a.data).getTime() - new Date(b.data).getTime(),
+      );
+    }
+
+    return transactions;
+  }, [filterTransactions, filters, selectedDate, searchTerm, sortBy]);
 
   // Totais
   const totals = useMemo(() => {
@@ -311,6 +346,73 @@ export default function Transactions() {
       key !== "dataInicio" && key !== "dataFim" && v !== undefined && v !== "",
   );
 
+  // Agrupar transações por data e calcular saldo projetado
+  const transactionsByDate = useMemo(() => {
+    const grouped: { [key: string]: Transaction[] } = {};
+    const accountBalances: { [key: string]: number } = {};
+
+    // Inicializar saldos das contas
+    accounts.forEach((account) => {
+      accountBalances[account.id] = account.saldo_inicial || 0;
+    });
+
+    // Agrupar por data
+    filteredTransactions.forEach((transaction) => {
+      const dateKey = transaction.data;
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = [];
+      }
+      grouped[dateKey].push(transaction);
+    });
+
+    // Ordenar datas conforme preferência do usuário
+    const sortedDates = Object.keys(grouped); //.sort((a, b) => {
+    //   if (
+    //     sortBy === "data-za" ||
+    //     sortBy === "descricao-az" ||
+    //     sortBy === "descricao-za"
+    //   ) {
+    //     // Ascendente (mais antigos primeiro)
+    //     //return a.localeCompare(b);
+    //   } else {
+    //     // Descendente (mais recentes primeiro)
+    //     //return b.localeCompare(a);
+    //   }
+    // });
+
+    // Calcular saldo projetado para cada data
+    const result: {
+      date: string;
+      transactions: Transaction[];
+      projectedBalance: number;
+    }[] = [];
+
+    sortedDates.forEach((date) => {
+      const dayTransactions = grouped[date] || [];
+      let dayBalance = 0;
+
+      dayTransactions.forEach((transaction) => {
+        const value =
+          transaction.tipo === "Receita"
+            ? transaction.valor
+            : -transaction.valor;
+        dayBalance += value;
+        accountBalances[transaction.conta_id] += value;
+      });
+
+      result.push({
+        date,
+        transactions: dayTransactions,
+        projectedBalance: Object.values(accountBalances).reduce(
+          (sum, bal) => sum + bal,
+          0,
+        ),
+      });
+    });
+
+    return result;
+  }, [filteredTransactions, accounts, sortBy]);
+
   if (loading) {
     return (
       <MainLayout title="Lançamentos" subtitle="Gerencie suas transações">
@@ -337,316 +439,497 @@ export default function Transactions() {
         />
       }
     >
-      {/* Totals */}
-      <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="stat-card !p-3 text-center">
-          <p className="text-xs text-muted-foreground mb-1">Pago</p>
-          <p
-            className={cn(
-              "text-sm font-semibold",
-              totals.pago >= 0 ? "text-income" : "text-expense",
-            )}
-          >
-            {formatCurrency(totals.pago)}
-          </p>
+      <div className="pb-20 lg:pb-0">
+        {/* Totals */}
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="stat-card !p-3 text-center">
+            <p className="text-xs text-muted-foreground mb-1">Pago</p>
+            <p
+              className={cn(
+                "text-sm font-semibold",
+                totals.pago >= 0 ? "text-income" : "text-expense",
+              )}
+            >
+              {formatCurrency(totals.pago)}
+            </p>
+          </div>
+          <div className="stat-card !p-3 text-center">
+            <p className="text-xs text-muted-foreground mb-1">Pendente</p>
+            <p
+              className={cn(
+                "text-sm font-semibold",
+                totals.pendente >= 0 ? "text-income" : "text-expense",
+              )}
+            >
+              {formatCurrency(totals.pendente)}
+            </p>
+          </div>
+          <div className="stat-card !p-3 text-center">
+            <p className="text-xs text-muted-foreground mb-1">Total</p>
+            <p
+              className={cn(
+                "text-sm font-semibold",
+                totals.total >= 0 ? "text-income" : "text-expense",
+              )}
+            >
+              {formatCurrency(totals.total)}
+            </p>
+          </div>
         </div>
-        <div className="stat-card !p-3 text-center">
-          <p className="text-xs text-muted-foreground mb-1">Pendente</p>
-          <p
-            className={cn(
-              "text-sm font-semibold",
-              totals.pendente >= 0 ? "text-income" : "text-expense",
-            )}
-          >
-            {formatCurrency(totals.pendente)}
-          </p>
-        </div>
-        <div className="stat-card !p-3 text-center">
-          <p className="text-xs text-muted-foreground mb-1">Total</p>
-          <p
-            className={cn(
-              "text-sm font-semibold",
-              totals.total >= 0 ? "text-income" : "text-expense",
-            )}
-          >
-            {formatCurrency(totals.total)}
-          </p>
-        </div>
-      </div>
 
-      <div className="flex flex-col sm:flex-row justify-between gap-3 mb-4">
-        {/* Filters */}
-        <div className="flex flex-wrap gap-2">
-          <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
-                <Filter className="h-3.5 w-3.5" />
-                Filtros
-                {hasActiveFilters && (
-                  <span className="ml-1 h-4 w-4 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
-                    !
-                  </span>
-                )}
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[400px]">
-              <DialogHeader>
-                <DialogTitle className="font-medium">
-                  Filtrar Lançamentos
-                </DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <Label>Conta</Label>
-                  <Select
-                    value={filters.conta_id || "all"}
-                    onValueChange={(value) =>
-                      setFilters({
-                        ...filters,
-                        conta_id: value === "all" ? undefined : value,
-                      })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Todas as contas" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas as contas</SelectItem>
-                      {accounts.map((account) => (
-                        <SelectItem key={account.id} value={account.id}>
-                          {account.nome}
+        <div className="flex flex-col gap-3 mb-4">
+          {/* Top Bar - Busca, Ordenação e Filtros */}
+          <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center sm:justify-between">
+            {/* Busca */}
+            <Input
+              placeholder="Buscar por descrição"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-9 w-full text-sm stat-card"
+            />
+
+            {/* Ordenação */}
+            <Select
+              value={sortBy}
+              onValueChange={(value: any) => setSortBy(value)}
+            >
+              <SelectTrigger className="h-9 w-full sm:w-36 text-sm stat-card">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="data-az">Data ▲</SelectItem>
+                <SelectItem value="data-za">Data ▼</SelectItem>
+                <SelectItem value="descricao-az">Descrição ▲</SelectItem>
+                <SelectItem value="descricao-za">Descrição ▼</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Botão Filtros */}
+            <Button
+              variant={hasActiveFilters ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+              className="gap-2 stat-card"
+            >
+              <ChevronDown
+                className={`h-4 w-4 transition-transform ${
+                  showFilters ? "rotate-180" : ""
+                }`}
+              />
+              Filtros
+              {hasActiveFilters && (
+                <span className="ml-1 h-4 w-4 rounded-full bg-primary-foreground text-primary text-xs flex items-center justify-center">
+                  !
+                </span>
+              )}
+            </Button>
+
+            {/* Novo Lançamento - Desktop */}
+            <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="gap-2 hidden sm:flex">
+                  <Plus className="h-4 w-4" />
+                  Novo Lançamento
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[450px]">
+                <DialogHeader>
+                  <DialogTitle className="font-medium">
+                    {editingTransaction
+                      ? "Editar Lançamento"
+                      : "Novo Lançamento"}
+                  </DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="descricao">Descrição</Label>
+                    <Input
+                      id="descricao"
+                      value={formData.descricao}
+                      onChange={(e) =>
+                        setFormData({ ...formData, descricao: e.target.value })
+                      }
+                      placeholder="Ex: Supermercado"
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="valor">Valor</Label>
+                      <Input
+                        id="valor"
+                        step="0.01"
+                        value={formData.valor}
+                        onChange={(e) =>
+                          setFormData({ ...formData, valor: e.target.value })
+                        }
+                        onBlur={handleValorBlur}
+                        placeholder="0,00"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="data">Data</Label>
+                      <Input
+                        id="data"
+                        type="date"
+                        value={formData.data}
+                        onChange={(e) =>
+                          setFormData({ ...formData, data: e.target.value })
+                        }
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="tipo">Tipo</Label>
+                    <Select
+                      value={formData.tipo}
+                      onValueChange={(value: TransactionType) =>
+                        setFormData({
+                          ...formData,
+                          tipo: value,
+                          categoria_id: "",
+                        })
+                      }
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Receita">
+                          <IconBackground
+                            icon="ArrowUpRight"
+                            color="#008000"
+                            text="Receita"
+                          />
                         </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                        <SelectItem value="Despesa">
+                          <IconBackground
+                            icon="ArrowDownRight"
+                            color="#e24a4b"
+                            text="Despesa"
+                          />
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label>Categoria</Label>
-                  <Select
-                    value={filters.categoria_id || "all"}
-                    onValueChange={(value) =>
-                      setFilters({
-                        ...filters,
-                        categoria_id: value === "all" ? undefined : value,
-                      })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Todas as categorias" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas as categorias</SelectItem>
-                      {filteredCategories.map((category) => {
-                        return (
-                          <SelectItem key={category.id} value={category.id}>
-                            <IconBackground
-                              icon={category.icone as keyof typeof LucideIcons}
-                              color={category.cor}
-                              text={category.nome}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="conta">Conta</Label>
+                      <Select
+                        value={formData.conta_id}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, conta_id: value })
+                        }
+                        required
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {accounts
+                            .filter((a) => a.ativo)
+                            .map((account) => (
+                              <SelectItem key={account.id} value={account.id}>
+                                {account.nome}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="categoria">Categoria</Label>
+                      <Select
+                        value={formData.categoria_id}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, categoria_id: value })
+                        }
+                        required
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {filteredCategories.map((category) => {
+                            return (
+                              <SelectItem key={category.id} value={category.id}>
+                                <IconBackground
+                                  icon={
+                                    category.icone as keyof typeof LucideIcons
+                                  }
+                                  color={category.cor}
+                                  text={category.nome}
+                                />
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="pago"
+                        checked={formData.pago}
+                        onCheckedChange={(checked) =>
+                          setFormData({ ...formData, pago: checked })
+                        }
+                      />
+                      <Label htmlFor="pago" className="text-sm">
+                        Pago
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="cartao"
+                        checked={formData.cartao}
+                        onCheckedChange={(checked) =>
+                          setFormData({
+                            ...formData,
+                            cartao: checked,
+                            cartao_id: "",
+                            fatura_data: "",
+                            parcelas: "",
+                          })
+                        }
+                      />
+                      <Label htmlFor="cartao" className="text-sm">
+                        Cartão
+                      </Label>
+                    </div>
+                    {!editingTransaction && (
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          id="fixa"
+                          checked={formData.fixa}
+                          onCheckedChange={(checked) =>
+                            setFormData({ ...formData, fixa: checked })
+                          }
+                        />
+                        <Label htmlFor="fixa" className="text-sm">
+                          Repetir (36x)
+                        </Label>
+                      </div>
+                    )}
+                  </div>
+
+                  {formData.cartao && (
+                    <div className="p-3 rounded-xl bg-secondary/50 space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label>Cartão</Label>
+                          <Select
+                            value={formData.cartao_id}
+                            onValueChange={(value) =>
+                              setFormData({
+                                ...formData,
+                                cartao_id: value,
+                                fatura_data: "",
+                              })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {creditCards.map((card) => (
+                                <SelectItem key={card.id} value={card.id}>
+                                  {card.descricao}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Fatura</Label>
+                          <Select
+                            value={formData.fatura_data}
+                            onValueChange={(value) =>
+                              setFormData({ ...formData, fatura_data: value })
+                            }
+                            disabled={!formData.cartao_id}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {faturaOptions.map((option) => (
+                                <SelectItem
+                                  key={option.value}
+                                  value={option.value}
+                                >
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      {!editingTransaction && (
+                        <div className="space-y-2">
+                          <Label>Parcelar em</Label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              min="2"
+                              max="48"
+                              value={formData.parcelas}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  parcelas: e.target.value,
+                                })
+                              }
+                              placeholder="Ex: 12"
+                              className="w-24"
                             />
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Tipo</Label>
-                  <Select
-                    value={filters.tipo || "all"}
-                    onValueChange={(value) =>
-                      setFilters({
-                        ...filters,
-                        tipo:
-                          value === "all"
-                            ? undefined
-                            : (value as TransactionType),
-                      })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Todos os tipos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos os tipos</SelectItem>
-                      <SelectItem value="Receita">
-                        <IconBackground
-                          icon="ArrowUpRight"
-                          color="#008000"
-                          text="Receita"
-                        />
-                      </SelectItem>
-                      <SelectItem value="Despesa">
-                        <IconBackground
-                          icon="ArrowDownRight"
-                          color="#e24a4b"
-                          text="Despesa"
-                        />
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label>Status</Label>
-                    <Select
-                      value={
-                        filters.pago === undefined
-                          ? "all"
-                          : filters.pago
-                            ? "true"
-                            : "false"
-                      }
-                      onValueChange={(value) =>
-                        setFilters({
-                          ...filters,
-                          pago: value === "all" ? undefined : value === "true",
-                        })
-                      }
+                            <span className="text-sm text-muted-foreground">
+                              vezes
+                            </span>
+                            {formData.parcelas &&
+                              parseInt(formData.parcelas) > 1 && (
+                                <span className="text-xs text-muted-foreground ml-auto">
+                                  {formatCurrency(
+                                    (parseFloat(formData.valor) || 0) /
+                                      parseInt(formData.parcelas),
+                                  )}
+                                  /parcela
+                                </span>
+                              )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {!editingTransaction && (
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      disabled={isSubmitting}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Todos" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todos</SelectItem>
-                        <SelectItem value="true">Pago</SelectItem>
-                        <SelectItem value="false">Pendente</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Cartão</Label>
-                    <Select
-                      value={
-                        filters.cartao === undefined
-                          ? "all"
-                          : filters.cartao
-                            ? "true"
-                            : "false"
-                      }
-                      onValueChange={(value) =>
-                        setFilters({
-                          ...filters,
-                          cartao:
-                            value === "all" ? undefined : value === "true",
-                        })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Todos" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todos</SelectItem>
-                        <SelectItem value="true">Cartão</SelectItem>
-                        <SelectItem value="false">Outros</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Salvando...
+                        </>
+                      ) : (
+                        "Criar Lançamento"
+                      )}
+                    </Button>
+                  )}
+                  {editingTransaction && (
+                    <div className="flex gap-2 justify-center">
+                      <Button
+                        type="submit"
+                        size="sm"
+                        disabled={isSubmitting}
+                        className="flex-1"
+                        value="salvar"
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Salvando...
+                          </>
+                        ) : (
+                          "Salvar"
+                        )}
+                      </Button>
+                      <Button
+                        type="submit"
+                        size="sm"
+                        disabled={isSubmitting}
+                        className="flex-1"
+                        value="salvar-futuras"
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Salvando...
+                          </>
+                        ) : (
+                          "Salvar futuras"
+                        )}
+                      </Button>
+                      <Button
+                        type="submit"
+                        size="sm"
+                        disabled={isSubmitting}
+                        className="flex-1"
+                        value="salvar-pendentes"
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Salvando...
+                          </>
+                        ) : (
+                          "Salvar pendentes"
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
 
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={clearFilters}
-                  >
-                    Limpar
-                  </Button>
-                  <Button
-                    className="flex-1"
-                    onClick={() => setIsFilterOpen(false)}
-                  >
-                    Aplicar
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          {hasActiveFilters && (
-            <Button variant="ghost" size="sm" onClick={clearFilters}>
-              <X className="h-3.5 w-3.5 mr-1" />
-              Limpar
-            </Button>
-          )}
-        </div>
-
-        <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="gap-2">
-              <Plus className="h-4 w-4" />
-              Novo Lançamento
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[450px]">
-            <DialogHeader>
-              <DialogTitle className="font-medium">
-                {editingTransaction ? "Editar Lançamento" : "Novo Lançamento"}
-              </DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-              <div className="space-y-2">
-                <Label htmlFor="descricao">Descrição</Label>
-                <Input
-                  id="descricao"
-                  value={formData.descricao}
-                  onChange={(e) =>
-                    setFormData({ ...formData, descricao: e.target.value })
-                  }
-                  placeholder="Ex: Supermercado"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="valor">Valor</Label>
-                  <Input
-                    id="valor"
-                    step="0.01"
-                    value={formData.valor}
-                    onChange={(e) =>
-                      setFormData({ ...formData, valor: e.target.value })
-                    }
-                    onBlur={handleValorBlur}
-                    placeholder="0,00"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="data">Data</Label>
-                  <Input
-                    id="data"
-                    type="date"
-                    value={formData.data}
-                    onChange={(e) =>
-                      setFormData({ ...formData, data: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="tipo">Tipo</Label>
+          {/* Filtros Expansíveis */}
+          {showFilters && (
+            <div className="stat-card grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-2 p-3 rounded-lg bg-secondary/30 border border-secondary/50">
+              {/* Conta */}
+              <div>
+                <Label className="text-xs mb-1 block">Conta</Label>
                 <Select
-                  value={formData.tipo}
-                  onValueChange={(value: TransactionType) =>
-                    setFormData({
-                      ...formData,
-                      tipo: value,
-                      categoria_id: "",
+                  value={filters.conta_id || "all"}
+                  onValueChange={(value) =>
+                    setFilters({
+                      ...filters,
+                      conta_id: value === "all" ? undefined : value,
                     })
                   }
-                  required
                 >
-                  <SelectTrigger>
-                    <SelectValue />
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Todas" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="all">Todas as contas</SelectItem>
+                    {accounts.map((account) => (
+                      <SelectItem key={account.id} value={account.id}>
+                        {account.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Tipo */}
+              <div>
+                <Label className="text-xs mb-1 block">Tipo</Label>
+                <Select
+                  value={filters.tipo || "all"}
+                  onValueChange={(value) =>
+                    setFilters({
+                      ...filters,
+                      tipo:
+                        value === "all"
+                          ? undefined
+                          : (value as TransactionType),
+                    })
+                  }
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os tipos</SelectItem>
                     <SelectItem value="Receita">
                       <IconBackground
                         icon="ArrowUpRight"
@@ -665,419 +948,304 @@ export default function Transactions() {
                 </Select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="conta">Conta</Label>
-                  <Select
-                    value={formData.conta_id}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, conta_id: value })
-                    }
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {accounts
-                        .filter((a) => a.ativo)
-                        .map((account) => (
-                          <SelectItem key={account.id} value={account.id}>
-                            {account.nome}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="categoria">Categoria</Label>
-                  <Select
-                    value={formData.categoria_id}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, categoria_id: value })
-                    }
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredCategories.map((category) => {
-                        return (
-                          <SelectItem key={category.id} value={category.id}>
-                            <IconBackground
-                              icon={category.icone as keyof typeof LucideIcons}
-                              color={category.cor}
-                              text={category.nome}
-                            />
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2">
-                  <Switch
-                    id="pago"
-                    checked={formData.pago}
-                    onCheckedChange={(checked) =>
-                      setFormData({ ...formData, pago: checked })
-                    }
-                  />
-                  <Label htmlFor="pago" className="text-sm">
-                    Pago
-                  </Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    id="cartao"
-                    checked={formData.cartao}
-                    onCheckedChange={(checked) =>
-                      setFormData({
-                        ...formData,
-                        cartao: checked,
-                        cartao_id: "",
-                        fatura_data: "",
-                        parcelas: "",
-                      })
-                    }
-                  />
-                  <Label htmlFor="cartao" className="text-sm">
-                    Cartão
-                  </Label>
-                </div>
-                {!editingTransaction && (
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      id="fixa"
-                      checked={formData.fixa}
-                      onCheckedChange={(checked) =>
-                        setFormData({ ...formData, fixa: checked })
-                      }
-                    />
-                    <Label htmlFor="fixa" className="text-sm">
-                      Repetir (36x)
-                    </Label>
-                  </div>
-                )}
-              </div>
-
-              {formData.cartao && (
-                <div className="p-3 rounded-xl bg-secondary/50 space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label>Cartão</Label>
-                      <Select
-                        value={formData.cartao_id}
-                        onValueChange={(value) =>
-                          setFormData({
-                            ...formData,
-                            cartao_id: value,
-                            fatura_data: "",
-                          })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {creditCards.map((card) => (
-                            <SelectItem key={card.id} value={card.id}>
-                              {card.descricao}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Fatura</Label>
-                      <Select
-                        value={formData.fatura_data}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, fatura_data: value })
-                        }
-                        disabled={!formData.cartao_id}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {faturaOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  {!editingTransaction && (
-                    <div className="space-y-2">
-                      <Label>Parcelar em</Label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          min="2"
-                          max="48"
-                          value={formData.parcelas}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              parcelas: e.target.value,
-                            })
-                          }
-                          placeholder="Ex: 12"
-                          className="w-24"
+              {/* Categoria */}
+              <div>
+                <Label className="text-xs mb-1 block">Categoria</Label>
+                <Select
+                  value={filters.categoria_id || "all"}
+                  onValueChange={(value) =>
+                    setFilters({
+                      ...filters,
+                      categoria_id: value === "all" ? undefined : value,
+                    })
+                  }
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Todas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as categorias</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        <IconBackground
+                          icon={category.icone as keyof typeof LucideIcons}
+                          color={category.cor}
+                          text={category.nome}
                         />
-                        <span className="text-sm text-muted-foreground">
-                          vezes
-                        </span>
-                        {formData.parcelas &&
-                          parseInt(formData.parcelas) > 1 && (
-                            <span className="text-xs text-muted-foreground ml-auto">
-                              {formatCurrency(
-                                (parseFloat(formData.valor) || 0) /
-                                  parseInt(formData.parcelas),
-                              )}
-                              /parcela
-                            </span>
-                          )}
-                      </div>
-                    </div>
-                  )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Status */}
+              <div>
+                <Label className="text-xs mb-1 block">Status</Label>
+                <Select
+                  value={
+                    filters.pago === undefined
+                      ? "all"
+                      : filters.pago
+                        ? "true"
+                        : "false"
+                  }
+                  onValueChange={(value) =>
+                    setFilters({
+                      ...filters,
+                      pago: value === "all" ? undefined : value === "true",
+                    })
+                  }
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="true">Pago</SelectItem>
+                    <SelectItem value="false">Pendente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Cartão */}
+              <div>
+                <Label className="text-xs mb-1 block">Cartão</Label>
+                <Select
+                  value={filters.cartao_id || "all"}
+                  onValueChange={(value) =>
+                    setFilters({
+                      ...filters,
+                      cartao_id: value === "all" ? undefined : value,
+                    })
+                  }
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    {creditCards.map((cartao) => (
+                      <SelectItem key={cartao.id} value={cartao.id}>
+                        {cartao.descricao}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Botão Limpar */}
+              {hasActiveFilters && (
+                <div className="flex items-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearFilters}
+                    className="w-full text-xs"
+                  >
+                    <X className="h-3.5 w-3.5 mr-1" />
+                    Limpar
+                  </Button>
                 </div>
               )}
-              {!editingTransaction && (
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Salvando...
-                    </>
-                  ) : (
-                    "Criar Lançamento"
-                  )}
+            </div>
+          )}
+
+          {/* Novo Lançamento - Mobile (aparece depois dos filtros) */}
+          <div className="flex sm:hidden">
+            <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="gap-2 w-full">
+                  <Plus className="h-4 w-4" />
+                  Novo Lançamento
                 </Button>
-              )}
-              {editingTransaction && (
-                <div className="flex gap-2 justify-center">
-                  <Button
-                    type="submit"
-                    size="sm"
-                    disabled={isSubmitting}
-                    className="flex-1"
-                    value="salvar"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Salvando...
-                      </>
-                    ) : (
-                      "Salvar"
-                    )}
-                  </Button>
-                  <Button
-                    type="submit"
-                    size="sm"
-                    disabled={isSubmitting}
-                    className="flex-1"
-                    value="salvar-futuras"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Salvando...
-                      </>
-                    ) : (
-                      "Salvar futuras"
-                    )}
-                  </Button>
-                  <Button
-                    type="submit"
-                    size="sm"
-                    disabled={isSubmitting}
-                    className="flex-1"
-                    value="salvar-pendentes"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Salvando...
-                      </>
-                    ) : (
-                      "Salvar pendentes"
-                    )}
-                  </Button>
-                </div>
-              )}
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Transactions List */}
-      {filteredTransactions.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
-            <Receipt className="h-7 w-7 text-muted-foreground" />
+              </DialogTrigger>
+            </Dialog>
           </div>
-          <h3 className="text-base font-medium text-foreground mb-1">
-            Nenhum lançamento
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            Nenhum lançamento encontrado para este período
-          </p>
         </div>
-      ) : (
-        <div className="stat-card">
-          <div className="text-xs text-muted-foreground mb-3">
-            {filteredTransactions.length} lançamento(s)
+        {filteredTransactions.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center ">
+            <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
+              <Receipt className="h-7 w-7 text-muted-foreground" />
+            </div>
+            <h3 className="text-base font-medium text-foreground mb-1">
+              Nenhum lançamento
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Nenhum lançamento encontrado para este período
+            </p>
           </div>
+        ) : (
+          <div className="stat-card">
+            <div className="text-xs text-muted-foreground mb-3">
+              {filteredTransactions.length} lançamento(s)
+            </div>
 
-          <div className="space-y-1.5">
-            {filteredTransactions.map((transaction) => {
-              const category = categories.find(
-                (c) => c.id === transaction.categoria_id,
-              );
-              const account = accounts.find(
-                (a) => a.id === transaction.conta_id,
-              );
-              const isIncome = transaction.tipo === "Receita";
+            <div className="space-y-0.5">
+              {transactionsByDate.map((dayData) => (
+                <div key={dayData.date}>
+                  {/* Transações do dia */}
+                  <div className="space-y-1">
+                    {dayData.transactions.map((transaction) => {
+                      const category = categories.find(
+                        (c) => c.id === transaction.categoria_id,
+                      );
+                      // const account = accounts.find(
+                      //   (a) => a.id === transaction.conta_id,
+                      // );
+                      const isIncome = transaction.tipo === "Receita";
 
-              return (
-                <div
-                  key={transaction.id}
-                  className="flex items-center justify-between p-1.5 rounded-xl bg-secondary/30 hover:bg-secondary/90 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <IconBackground
-                      icon={category.icone as keyof typeof LucideIcons}
-                      color={category.cor}
-                      text=""
-                    />
+                      return (
+                        <div
+                          key={transaction.id}
+                          className="flex items-center justify-between p-1.5 rounded-xl bg-secondary/30 hover:bg-secondary/90 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <IconBackground
+                              icon={category?.icone as keyof typeof LucideIcons}
+                              color={category?.cor}
+                              text=""
+                            />
 
-                    <div>
-                      <p className="font-medium text-xs text-foreground flex items-center gap-1.5">
-                        {transaction.descricao}
-                        {transaction.fixa && (
-                          <Repeat className="h-3 w-3 text-muted-foreground" />
-                        )}
-                      </p>
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 text-xs text-muted-foreground">
-                        {category && (
-                          <div className="flex items-center gap-1">
-                            <span>{category.nome}</span>
+                            <div>
+                              <p className="font-medium text-xs text-foreground flex items-center gap-1.5">
+                                {transaction.descricao}
+                                {transaction.fixa && (
+                                  <Repeat className="h-3 w-3 text-muted-foreground" />
+                                )}
+                              </p>
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 text-xs text-muted-foreground">
+                                {category && (
+                                  <div className="flex items-center gap-1">
+                                    <span>{category.nome}</span>
+                                  </div>
+                                )}
+                                <span className="hidden sm:inline">•</span>
+                                <span>{formatDate(transaction.data)}</span>
+                              </div>
+                            </div>
                           </div>
-                        )}
-                        <span className="hidden sm:inline">•</span>
-                        <span>{formatDate(transaction.data)}</span>
-                      </div>
-                    </div>
+
+                          <div className="flex items-center gap-2">
+                            {/* Status badges */}
+                            <div className="flex items-center gap-1">
+                              {transaction.cartao && (
+                                <span className="flex items-center px-1.5 py-0.5 rounded text-xs bg-chart-1/10 text-chart-1">
+                                  <CreditCard className="h-3 w-3" />
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Value */}
+                            <span
+                              className={cn(
+                                "font-semibold text-xs min-w-[80px] text-right",
+                                isIncome ? "text-income" : "text-expense",
+                              )}
+                            >
+                              {isIncome ? "+" : "-"}
+                              {formatCurrency(transaction.valor)}
+                            </span>
+
+                            {/* Actions */}
+                            <div className="flex gap-0.5">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title={transaction.pago ? "Estornar" : "Pagar"}
+                                className={`h-7 w-7 transition-colors ${
+                                  transaction.pago
+                                    ? "text-green-500 bg-green-500/10 hover:bg-green-500/20 hover:text-green-600"
+                                    : "text-gray-500 bg-gray-500/10 hover:bg-gray-500/20 hover:text-gray-600"
+                                }`}
+                                onClick={() => togglePago(transaction.id)}
+                              >
+                                <LucideIcons.CircleDollarSignIcon className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Editar"
+                                className="h-7 w-7 transition-colors text-blue-500 bg-blue-500/10 hover:bg-blue-500/20 hover:text-blue-600"
+                                onClick={() => handleEdit(transaction)}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Deletar"
+                                className="h-7 w-7 transition-colors text-red-500 bg-red-500/10 hover:bg-red-500/20 hover:text-red-600"
+                                onClick={() => handleDeleteClick(transaction)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    {/* Status badges */}
-                    <div className="flex items-center gap-1">
-                      {transaction.cartao && (
-                        <span className="flex items-center px-1.5 py-0.5 rounded text-xs bg-chart-1/10 text-chart-1">
-                          <CreditCard className="h-3 w-3" />
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Value */}
-                    <span
-                      className={cn(
-                        "font-semibold text-xs min-w-[80px] text-right",
-                        isIncome ? "text-income" : "text-expense",
-                      )}
-                    >
-                      {isIncome ? "+" : "-"}
-                      {formatCurrency(transaction.valor)}
-                    </span>
-
-                    {/* Actions */}
-                    <div className="flex gap-0.5">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        title={transaction.pago ? "Estornar" : "Pagar"}
-                        className={`h-7 w-7 transition-colors ${
-                          transaction.pago
-                            ? "text-green-500 bg-green-500/10 hover:bg-green-500/20 hover:text-green-600"
-                            : "text-gray-500 bg-gray-500/10 hover:bg-gray-500/20 hover:text-gray-600"
-                        }`}
-                        onClick={() => togglePago(transaction.id)}
+                  {/* Linha de saldo projetado do dia */}
+                  <div className="mt-2 pt-2 border-t border-secondary/50 pl-12">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">
+                        Saldo projetado em {formatDate(dayData.date)}:
+                      </span>
+                      <span
+                        className={cn(
+                          "font-semibold",
+                          dayData.projectedBalance >= 0
+                            ? "text-income"
+                            : "text-expense",
+                        )}
                       >
-                        <LucideIcons.CircleDollarSignIcon className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        title="Editar"
-                        className="h-7 w-7 transition-colors text-blue-500 bg-blue-500/10 hover:bg-blue-500/20 hover:text-blue-600"
-                        onClick={() => handleEdit(transaction)}
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        title="Deletar"
-                        className="h-7 w-7 transition-colors text-red-500 bg-red-500/10 hover:bg-red-500/20 hover:text-red-600"
-                        onClick={() => handleDeleteClick(transaction)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                        {formatCurrency(dayData.projectedBalance)}
+                      </span>
                     </div>
                   </div>
                 </div>
-              );
-            })}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <AlertDialogContent className="sm:max-w-[400px]">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              O que deseja fazer com "{transactionToDelete?.descricao}"?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex flex-col gap-2">
-            <Button
-              variant="destructive"
-              onClick={() => handleDeleteConfirm("deletar")}
-            >
-              Deletar
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => handleDeleteConfirm("deletar-futuras")}
-            >
-              Deletar futuras
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => handleDeleteConfirm("deletar-pendentes")}
-            >
-              Deletar pendentes
-            </Button>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog
+          open={deleteConfirmOpen}
+          onOpenChange={setDeleteConfirmOpen}
+        >
+          <AlertDialogContent className="sm:max-w-[400px]">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+              <AlertDialogDescription>
+                O que deseja fazer com "{transactionToDelete?.descricao}"?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="flex flex-col gap-2">
+              <Button
+                variant="destructive"
+                onClick={() => handleDeleteConfirm("deletar")}
+              >
+                Deletar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => handleDeleteConfirm("deletar-futuras")}
+              >
+                Deletar futuras
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => handleDeleteConfirm("deletar-pendentes")}
+              >
+                Deletar pendentes
+              </Button>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            </div>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </MainLayout>
   );
 }

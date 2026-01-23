@@ -58,7 +58,7 @@ export function AccountsTable() {
                   <Icon className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium text-foreground text-sm">
+                  <p className="text-foreground text-sm font-semibold">
                     {account.nome}
                   </p>
                   <p className="text-xs text-muted-foreground">

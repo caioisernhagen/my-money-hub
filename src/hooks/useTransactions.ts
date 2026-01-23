@@ -338,7 +338,10 @@ export function useTransactions() {
           return false;
         if (filters.tipo && t.tipo !== filters.tipo) return false;
         if (filters.pago !== undefined && t.pago !== filters.pago) return false;
-        if (filters.cartao !== undefined && t.cartao !== filters.cartao)
+        if (
+          filters.cartao_id !== undefined &&
+          t.cartao_id !== filters.cartao_id
+        )
           return false;
         return true;
       });
