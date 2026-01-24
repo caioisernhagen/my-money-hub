@@ -1,4 +1,5 @@
 export type TransactionType = "Receita" | "Despesa";
+export type InvoiceStatus = "pendente" | "parcial" | "pago";
 
 export type AccountType =
   | "Corrente"
@@ -35,7 +36,9 @@ export interface Transaction {
   pago: boolean;
   cartao: boolean;
   cartao_id?: string | null;
-  fatura_data?: string | null;
+  fatura_mes?: string | null;
+  data_apresentacao?: string | null;
+  status_cobranca?: InvoiceStatus;
   fixa?: boolean;
   parcelas?: number | null;
   parcela_atual?: number | null;
@@ -48,6 +51,16 @@ export interface CreditCard {
   data_vencimento: number;
   data_fechamento: number;
   limite: number;
+}
+
+export interface InvoiceInfo {
+  mes: string;
+  label: string;
+  data_fechamento: string;
+  data_vencimento: string;
+  valor_total: number;
+  transacoes: Transaction[];
+  status: InvoiceStatus;
 }
 
 export interface TransactionFilters {

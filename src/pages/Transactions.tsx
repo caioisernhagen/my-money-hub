@@ -36,15 +36,12 @@ import {
   Pencil,
   Trash2,
   CreditCard,
-  Check,
   X,
-  ArrowUpRight,
-  ArrowDownRight,
-  Calendar,
   Loader2,
   Receipt,
   Repeat,
   ChevronDown,
+  Globe,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { IconBackground } from "@/components/IconBackground";
@@ -53,6 +50,7 @@ import {
   TransactionType,
   TransactionFilters,
 } from "@/types/finance";
+//import { obterDataExibicaoComMapa } from "@/lib/creditCardHelpers";
 import { toast } from "sonner";
 import {
   format,
@@ -74,7 +72,6 @@ export default function Transactions() {
     updateTransaction,
     deleteTransaction,
     togglePago,
-    toggleCartao,
     filterTransactions,
   } = useFinance();
 
@@ -106,7 +103,7 @@ export default function Transactions() {
     pago: false,
     cartao: false,
     cartao_id: "",
-    fatura_data: "",
+    fatura_mes: "",
     fixa: false,
     parcelas: "",
   });
@@ -144,6 +141,20 @@ export default function Transactions() {
     const date = parseISO(dateStr);
     return format(date, "dd/MM/yyyy");
   };
+
+  // Mapa de cartões para fácil busca
+  const creditCardsMap = useMemo(() => {
+    const map = new Map();
+    if (creditCards && creditCards.length > 0) {
+      creditCards.forEach((card) => map.set(card.id, card));
+    }
+    return map;
+  }, [creditCards]);
+
+  // Função para obter a data de exibição correta (vencimento para cartão, data original para conta)
+  // const obterDataExibicaoTransacao = (transaction: Transaction): string => {
+  //   return obterDataExibicaoComMapa(transaction, creditCardsMap);
+  // };
 
   // Filtro por mês selecionado + filtros adicionais + busca + ordenação
   const filteredTransactions = useMemo(() => {
@@ -220,7 +231,7 @@ export default function Transactions() {
       pago: false,
       cartao: false,
       cartao_id: "",
-      fatura_data: "",
+      fatura_mes: "",
       fixa: false,
       parcelas: "",
     });
@@ -237,11 +248,11 @@ export default function Transactions() {
     const transactionDate = parseISO(formData.data);
     const options: { value: string; label: string }[] = [];
 
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 12; i++) {
       const faturaMonth = addMonths(startOfMonth(transactionDate), i);
-      const faturaDate = format(faturaMonth, "yyyy-MM-01");
-      const label = format(faturaMonth, "MMMM 'de' yyyy", { locale: ptBR });
-      options.push({ value: faturaDate, label: `Fatura de ${label}` });
+      const faturaDate = format(faturaMonth, "yyyy-MM");
+      const label = format(faturaMonth, "MMMM'/'yyyy", { locale: ptBR });
+      options.push({ value: faturaDate, label: `${label}` });
     }
 
     return options;
@@ -264,7 +275,7 @@ export default function Transactions() {
       pago: transaction.pago,
       cartao: transaction.cartao,
       cartao_id: transaction.cartao_id || "",
-      fatura_data: transaction.fatura_data || "",
+      fatura_mes: transaction.fatura_mes || "",
       fixa: transaction.fixa || false,
       parcelas: "",
     });
@@ -290,7 +301,7 @@ export default function Transactions() {
       pago: formData.pago,
       cartao: formData.cartao,
       cartao_id: formData.cartao ? formData.cartao_id || null : null,
-      fatura_data: formData.cartao ? formData.fatura_data || null : null,
+      fatura_mes: formData.cartao ? formData.fatura_mes || null : null,
       fixa: formData.fixa,
       parcelas:
         formData.cartao && formData.parcelas
@@ -356,8 +367,9 @@ export default function Transactions() {
       accountBalances[account.id] = account.saldo_inicial || 0;
     });
 
-    // Agrupar por data
+    // Agrupar por data (usando data de exibição correta)
     filteredTransactions.forEach((transaction) => {
+      //transaction.data = obterDataExibicaoComMapa(transaction, creditCardsMap);
       const dateKey = transaction.data;
       if (!grouped[dateKey]) {
         grouped[dateKey] = [];
@@ -366,19 +378,7 @@ export default function Transactions() {
     });
 
     // Ordenar datas conforme preferência do usuário
-    const sortedDates = Object.keys(grouped); //.sort((a, b) => {
-    //   if (
-    //     sortBy === "data-za" ||
-    //     sortBy === "descricao-az" ||
-    //     sortBy === "descricao-za"
-    //   ) {
-    //     // Ascendente (mais antigos primeiro)
-    //     //return a.localeCompare(b);
-    //   } else {
-    //     // Descendente (mais recentes primeiro)
-    //     //return b.localeCompare(a);
-    //   }
-    // });
+    const sortedDates = Object.keys(grouped);
 
     // Calcular saldo projetado para cada data
     const result: {
@@ -508,10 +508,10 @@ export default function Transactions() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="data-az">Data ▲</SelectItem>
-                <SelectItem value="data-za">Data ▼</SelectItem>
-                <SelectItem value="descricao-az">Descrição ▲</SelectItem>
-                <SelectItem value="descricao-za">Descrição ▼</SelectItem>
+                <SelectItem value="data-az">▲ Data</SelectItem>
+                <SelectItem value="data-za">▼ Data</SelectItem>
+                <SelectItem value="descricao-az">▲ Descrição</SelectItem>
+                <SelectItem value="descricao-za">▼ Descrição</SelectItem>
               </SelectContent>
             </Select>
 
@@ -521,7 +521,7 @@ export default function Transactions() {
               //variant={hasActiveFilters ? "ghost" : "outline"}
               size="sm"
               onClick={() => setShowFilters(!showFilters)}
-              className={`gap-2 stat-card ${hasActiveFilters ? "transition-colors text-red-500" : ""}`}
+              className={`gap-2 stat-card ${hasActiveFilters ? "text-expense" : ""}`}
             >
               <ChevronDown
                 className={`h-4 w-4 transition-transform ${
@@ -648,7 +648,11 @@ export default function Transactions() {
                             .filter((a) => a.ativo)
                             .map((account) => (
                               <SelectItem key={account.id} value={account.id}>
-                                {account.nome}
+                                <IconBackground
+                                  icon="Wallet"
+                                  color="#45b6fe"
+                                  text={account.nome}
+                                />
                               </SelectItem>
                             ))}
                         </SelectContent>
@@ -707,7 +711,7 @@ export default function Transactions() {
                             ...formData,
                             cartao: checked,
                             cartao_id: "",
-                            fatura_data: "",
+                            fatura_mes: "",
                             parcelas: "",
                           })
                         }
@@ -743,7 +747,7 @@ export default function Transactions() {
                               setFormData({
                                 ...formData,
                                 cartao_id: value,
-                                fatura_data: "",
+                                fatura_mes: "",
                               })
                             }
                           >
@@ -762,9 +766,9 @@ export default function Transactions() {
                         <div className="space-y-2">
                           <Label>Fatura</Label>
                           <Select
-                            value={formData.fatura_data}
+                            value={formData.fatura_mes}
                             onValueChange={(value) =>
-                              setFormData({ ...formData, fatura_data: value })
+                              setFormData({ ...formData, fatura_mes: value })
                             }
                             disabled={!formData.cartao_id}
                           >
@@ -912,10 +916,20 @@ export default function Transactions() {
                     <SelectValue placeholder="Todas" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todas as contas</SelectItem>
+                    <SelectItem value="all">
+                      <IconBackground
+                        icon="Globe"
+                        color="#45b6fe"
+                        text="Todas"
+                      />
+                    </SelectItem>
                     {accounts.map((account) => (
                       <SelectItem key={account.id} value={account.id}>
-                        {account.nome}
+                        <IconBackground
+                          icon="Wallet"
+                          color="#45b6fe"
+                          text={account.nome}
+                        />
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -941,7 +955,13 @@ export default function Transactions() {
                     <SelectValue placeholder="Todos" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todos os tipos</SelectItem>
+                    <SelectItem value="all">
+                      <IconBackground
+                        icon="Globe"
+                        color="#45b6fe"
+                        text="Todos"
+                      />
+                    </SelectItem>
                     <SelectItem value="Receita">
                       <IconBackground
                         icon="ArrowUpRight"
@@ -976,7 +996,13 @@ export default function Transactions() {
                     <SelectValue placeholder="Todas" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todas as categorias</SelectItem>
+                    <SelectItem value="all">
+                      <IconBackground
+                        icon="Globe"
+                        color="#45b6fe"
+                        text="Todas"
+                      />
+                    </SelectItem>
                     {categories.map((category) => (
                       <SelectItem key={category.id} value={category.id}>
                         <IconBackground
@@ -1012,9 +1038,29 @@ export default function Transactions() {
                     <SelectValue placeholder="Todos" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="true">Pago</SelectItem>
-                    <SelectItem value="false">Pendente</SelectItem>
+                    <SelectItem value="all">
+                      <IconBackground
+                        icon="Globe"
+                        color="#45b6fe"
+                        text="Todos"
+                      />
+                    </SelectItem>
+                    <SelectItem value="true">
+                      <IconBackground
+                        //icon="CircleCheck"
+                        icon="CircleDollarSignIcon"
+                        color="#008000"
+                        text="Pago"
+                      />
+                    </SelectItem>
+                    <SelectItem value="false">
+                      <IconBackground
+                        //icon="CircleX"
+                        icon="CircleDollarSignIcon"
+                        color="#e24a4b"
+                        text="Pendente"
+                      />
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1023,7 +1069,7 @@ export default function Transactions() {
               <div>
                 <Label className="text-xs mb-1 block">Cartão</Label>
                 <Select
-                  value={filters.cartao_id || "all"}
+                  value={filters.cartao_id || "all" || "noCard"}
                   onValueChange={(value) =>
                     setFilters({
                       ...filters,
@@ -1035,10 +1081,27 @@ export default function Transactions() {
                     <SelectValue placeholder="Todos" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="all">
+                      <IconBackground
+                        icon="Globe"
+                        color="#45b6fe"
+                        text="Todos"
+                      />
+                    </SelectItem>
+                    <SelectItem value="noCard">
+                      <IconBackground
+                        icon="CreditCard"
+                        color="#e24a4b"
+                        text="Sem cartão"
+                      />
+                    </SelectItem>
                     {creditCards.map((cartao) => (
                       <SelectItem key={cartao.id} value={cartao.id}>
-                        {cartao.descricao}
+                        <IconBackground
+                          icon="CreditCard"
+                          color="#45b6fe"
+                          text={cartao.descricao}
+                        />
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1132,7 +1195,12 @@ export default function Transactions() {
                                   </div>
                                 )}
                                 <span className="hidden sm:inline">•</span>
-                                <span>{formatDate(transaction.data)}</span>
+                                <span>
+                                  {formatDate(transaction.data)}
+                                  {/* {formatDate(
+                                    obterDataExibicaoTransacao(transaction),
+                                  )} */}
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -1141,8 +1209,8 @@ export default function Transactions() {
                             {/* Status badges */}
                             <div className="flex items-center gap-1">
                               {transaction.cartao && (
-                                <span className="flex items-center px-1.5 py-0.5 rounded text-xs bg-chart-1/10 text-chart-1">
-                                  <CreditCard className="h-3 w-3" />
+                                <span className="flex items-center px-1.5 py-0.5 rounded text-xs text-chart-1">
+                                  <CreditCard className="h-4 w-4" />
                                 </span>
                               )}
                             </div>

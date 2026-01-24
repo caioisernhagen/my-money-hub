@@ -10,4 +10,4 @@ ALTER TABLE public.transactions
 
 -- Criar índice para transações parentes
 CREATE INDEX idx_transactions_parent_id ON public.transactions(transaction_parent_id);
-CREATE INDEX idx_transactions_fatura_data ON public.transactions(fatura_data);
+CREATE INDEX idx_transactions_fatura_mes ON public.transactions(fatura_mes);

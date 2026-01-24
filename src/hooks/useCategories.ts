@@ -122,7 +122,6 @@ export function useCategories() {
       .select("id")
       .eq("categoria_id", id);
 
-    console.log("data", data);
     if (data.length > 0) {
       toast.error("Categoria com transações vinculadas não pode ser excluída");
       return false;

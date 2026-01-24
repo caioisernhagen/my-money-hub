@@ -1,13 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCreditCards } from "@/hooks/useCreditCards";
 import {
   Transaction,
   TransactionType,
   TransactionFilters,
+  CreditCard,
 } from "@/types/finance";
 import { toast } from "sonner";
 import { addMonths, format } from "date-fns";
+import { calcularMesFatura } from "@/lib/creditCardHelpers";
 
 interface DbTransaction {
   id: string;
@@ -21,7 +24,7 @@ interface DbTransaction {
   pago: boolean;
   cartao: boolean;
   cartao_id: string | null;
-  fatura_data: string | null;
+  fatura_mes: string | null;
   fixa: boolean;
   parcelas: number | null;
   parcela_atual: number | null;
@@ -32,6 +35,7 @@ interface DbTransaction {
 
 export function useTransactions() {
   const { user } = useAuth();
+  const { creditCards } = useCreditCards();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -58,7 +62,7 @@ export function useTransactions() {
           pago: t.pago,
           cartao: t.cartao,
           cartao_id: t.cartao_id,
-          fatura_data: t.fatura_data,
+          fatura_mes: t.fatura_mes,
           fixa: t.fixa,
           parcelas: t.parcelas,
           parcela_atual: t.parcela_atual,
@@ -76,6 +80,18 @@ export function useTransactions() {
   const addTransaction = useCallback(
     async (transaction: Omit<Transaction, "id">) => {
       if (!user) return null;
+
+      // Helper para calcular fatura_mes
+      const calcularFaturaMes = (
+        data: string,
+        ehCartao: boolean,
+        cartaoId?: string | null,
+      ): string | null => {
+        if (!ehCartao || !cartaoId) return null;
+        const cartao = creditCards.find((c) => c.id === cartaoId);
+        if (!cartao) return null;
+        return calcularMesFatura(data, cartao.data_fechamento);
+      };
 
       // Se for parcelado, criar várias transações
       if (
@@ -102,6 +118,12 @@ export function useTransactions() {
             ? transaction.descricao
             : `${transaction.descricao} (${i + 1}/${transaction.parcelas})`;
 
+          const faturaMes = calcularFaturaMes(
+            data || "",
+            transaction.cartao,
+            transaction.cartao_id,
+          );
+
           transactionsToCreate.push({
             user_id: user.id,
             descricao: descricao,
@@ -113,7 +135,7 @@ export function useTransactions() {
             pago: transaction.pago,
             cartao: transaction.cartao,
             cartao_id: transaction.cartao_id || null,
-            fatura_data: data,
+            fatura_mes: faturaMes,
             fixa: false,
             parcelas: transaction.parcelas,
             parcela_atual: i + 1,
@@ -143,7 +165,7 @@ export function useTransactions() {
           pago: t.pago,
           cartao: t.cartao,
           cartao_id: t.cartao_id,
-          fatura_data: t.fatura_data,
+          fatura_mes: t.fatura_mes,
           fixa: t.fixa,
           parcelas: t.parcelas,
           parcela_atual: t.parcela_atual,
@@ -156,6 +178,12 @@ export function useTransactions() {
       }
 
       // Transação normal
+      const faturaMes = calcularFaturaMes(
+        transaction.data || "",
+        transaction.cartao,
+        transaction.cartao_id,
+      );
+
       const { data, error } = await supabase
         .from("transactions")
         .insert({
@@ -169,7 +197,7 @@ export function useTransactions() {
           pago: transaction.pago,
           cartao: transaction.cartao,
           cartao_id: transaction.cartao_id || null,
-          fatura_data: transaction.fatura_data || null,
+          fatura_mes: faturaMes || transaction.fatura_mes || null,
           fixa: transaction.fixa || false,
           parcelas: null,
           parcela_atual: null,
@@ -195,7 +223,7 @@ export function useTransactions() {
         pago: data.pago,
         cartao: data.cartao,
         cartao_id: data.cartao_id,
-        fatura_data: data.fatura_data,
+        fatura_mes: data.fatura_mes,
         fixa: data.fixa,
         parcelas: data.parcelas,
         parcela_atual: data.parcela_atual,
@@ -331,8 +359,15 @@ export function useTransactions() {
   const filterTransactions = useCallback(
     (filters: TransactionFilters): Transaction[] => {
       return transactions.filter((t) => {
-        if (filters.dataInicio && t.data < filters.dataInicio) return false;
-        if (filters.dataFim && t.data > filters.dataFim) return false;
+        const date =
+          t.cartao && t.fatura_mes
+            ? format(
+                addMonths(new Date(t.fatura_mes + "-01T12:00:00"), 1),
+                "yyyy-MM-dd",
+              )
+            : t.data;
+        if (filters.dataInicio && date < filters.dataInicio) return false;
+        if (filters.dataFim && date > filters.dataFim) return false;
         if (filters.conta_id && t.conta_id !== filters.conta_id) return false;
         if (filters.categoria_id && t.categoria_id !== filters.categoria_id)
           return false;
@@ -340,9 +375,13 @@ export function useTransactions() {
         if (filters.pago !== undefined && t.pago !== filters.pago) return false;
         if (
           filters.cartao_id !== undefined &&
+          filters.cartao_id !== "noCard" &&
           t.cartao_id !== filters.cartao_id
         )
           return false;
+        if (filters.cartao_id === "noCard" && t.cartao_id !== null)
+          return false;
+
         return true;
       });
     },

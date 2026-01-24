@@ -1,77 +1,109 @@
-import { useState, useMemo } from 'react';
-import { MainLayout } from '@/components/layout/MainLayout';
-import { useCreditCards } from '@/hooks/useCreditCards';
-import { useFinance } from '@/contexts/FinanceContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useState, useMemo } from "react";
+import { MainLayout } from "@/components/layout/MainLayout";
+import { useCreditCards } from "@/hooks/useCreditCards";
+import { useFinance } from "@/contexts/FinanceContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Plus, Pencil, Trash2, CreditCard as CardIcon, Calendar, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
-import { CreditCard } from '@/types/finance';
-import { toast } from 'sonner';
-import { format, startOfMonth, addMonths } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/dialog";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  CreditCard as CardIcon,
+  Calendar,
+  Loader2,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
+import { CreditCard } from "@/types/finance";
+import { toast } from "sonner";
+import { format, startOfMonth, addMonths } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 export default function CreditCards() {
-  const { creditCards, loading, addCreditCard, updateCreditCard, deleteCreditCard } = useCreditCards();
+  const {
+    creditCards,
+    loading,
+    addCreditCard,
+    updateCreditCard,
+    deleteCreditCard,
+  } = useCreditCards();
   const { transactions } = useFinance();
-  
+
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingCard, setEditingCard] = useState<CreditCard | null>(null);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    descricao: '',
-    data_vencimento: '',
-    data_fechamento: '',
-    limite: '',
+    descricao: "",
+    data_vencimento: "",
+    data_fechamento: "",
+    limite: "",
   });
 
   // Calcular faturas por cartão
   const getCardInvoices = (cardId: string) => {
-    const cardTransactions = transactions.filter(t => t.cartao_id === cardId && t.fatura_data);
+    const cardTransactions = transactions.filter(
+      (t) => t.cartao_id === cardId && t.fatura_mes,
+    );
     const invoices: { [key: string]: number } = {};
-    
-    cardTransactions.forEach(t => {
-      if (t.fatura_data) {
-        if (!invoices[t.fatura_data]) invoices[t.fatura_data] = 0;
-        invoices[t.fatura_data] += t.valor;
+
+    cardTransactions.forEach((t) => {
+      if (t.fatura_mes) {
+        if (!invoices[t.fatura_mes]) invoices[t.fatura_mes] = 0;
+        invoices[t.fatura_mes] += t.valor;
       }
     });
-    
+
     // Ordenar por data e retornar
     return Object.entries(invoices)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, valor]) => ({
         date,
-        label: format(new Date(date + 'T12:00:00'), "MMMM 'de' yyyy", { locale: ptBR }),
+        label: format(new Date(date + "T12:00:00"), "MMMM 'de' yyyy", {
+          locale: ptBR,
+        }),
         valor,
       }));
   };
 
   // Calcular fatura atual
   const getCurrentInvoiceTotal = (cardId: string) => {
-    const currentMonth = format(startOfMonth(new Date()), 'yyyy-MM-01');
+    const currentMonth = format(startOfMonth(new Date()), "yyyy-MM");
     const cardTransactions = transactions.filter(
-      t => t.cartao_id === cardId && t.fatura_data === currentMonth
+      (t) => t.cartao_id === cardId && t.fatura_mes === currentMonth,
     );
+    return cardTransactions.reduce((sum, t) => sum + t.valor, 0);
+  };
+  // Calcular fatura atual
+  const getInvoiceTotal = (cardId: string) => {
+    const cardTransactions = transactions.filter((t) => t.cartao_id === cardId);
     return cardTransactions.reduce((sum, t) => sum + t.valor, 0);
   };
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value);
   };
 
   const resetForm = () => {
-    setFormData({ descricao: '', data_vencimento: '', data_fechamento: '', limite: '' });
+    setFormData({
+      descricao: "",
+      data_vencimento: "",
+      data_fechamento: "",
+      limite: "",
+    });
     setEditingCard(null);
   };
 
@@ -94,7 +126,7 @@ export default function CreditCards() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     const cardData = {
       descricao: formData.descricao,
       data_vencimento: parseInt(formData.data_vencimento) || 1,
@@ -105,13 +137,13 @@ export default function CreditCards() {
     if (editingCard) {
       const success = await updateCreditCard(editingCard.id, cardData);
       if (success) {
-        toast.success('Cartão atualizado!');
+        toast.success("Cartão atualizado!");
         handleOpenChange(false);
       }
     } else {
       const result = await addCreditCard(cardData);
       if (result) {
-        toast.success('Cartão criado!');
+        toast.success("Cartão criado!");
         handleOpenChange(false);
       }
     }
@@ -122,7 +154,7 @@ export default function CreditCards() {
   const handleDelete = async (id: string) => {
     const success = await deleteCreditCard(id);
     if (success) {
-      toast.success('Cartão excluído!');
+      toast.success("Cartão excluído!");
     }
   };
 
@@ -151,7 +183,7 @@ export default function CreditCards() {
           <DialogContent className="sm:max-w-[380px]">
             <DialogHeader>
               <DialogTitle className="font-medium">
-                {editingCard ? 'Editar Cartão' : 'Novo Cartão'}
+                {editingCard ? "Editar Cartão" : "Novo Cartão"}
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 mt-4">
@@ -160,12 +192,14 @@ export default function CreditCards() {
                 <Input
                   id="descricao"
                   value={formData.descricao}
-                  onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, descricao: e.target.value })
+                  }
                   placeholder="Ex: Nubank"
                   required
                 />
               </div>
-              
+
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label>Fechamento</Label>
@@ -174,7 +208,12 @@ export default function CreditCards() {
                     min="1"
                     max="31"
                     value={formData.data_fechamento}
-                    onChange={(e) => setFormData({ ...formData, data_fechamento: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        data_fechamento: e.target.value,
+                      })
+                    }
                     placeholder="8"
                     required
                   />
@@ -186,7 +225,12 @@ export default function CreditCards() {
                     min="1"
                     max="31"
                     value={formData.data_vencimento}
-                    onChange={(e) => setFormData({ ...formData, data_vencimento: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        data_vencimento: e.target.value,
+                      })
+                    }
                     placeholder="15"
                     required
                   />
@@ -200,7 +244,9 @@ export default function CreditCards() {
                   step="0.01"
                   min="0"
                   value={formData.limite}
-                  onChange={(e) => setFormData({ ...formData, limite: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, limite: e.target.value })
+                  }
                   placeholder="5000,00"
                 />
               </div>
@@ -211,8 +257,10 @@ export default function CreditCards() {
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Salvando...
                   </>
+                ) : editingCard ? (
+                  "Salvar"
                 ) : (
-                  editingCard ? 'Salvar' : 'Criar Cartão'
+                  "Criar Cartão"
                 )}
               </Button>
             </form>
@@ -225,16 +273,21 @@ export default function CreditCards() {
           <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
             <CardIcon className="h-7 w-7 text-muted-foreground" />
           </div>
-          <h3 className="text-base font-medium text-foreground mb-1">Nenhum cartão</h3>
-          <p className="text-sm text-muted-foreground">Comece adicionando seu primeiro cartão</p>
+          <h3 className="text-base font-medium text-foreground mb-1">
+            Nenhum cartão
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Comece adicionando seu primeiro cartão
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pb-20 lg:pb-0">
           {creditCards.map((card) => {
             const currentInvoice = getCurrentInvoiceTotal(card.id);
+            const totalInvoice = getInvoiceTotal(card.id);
             const invoices = getCardInvoices(card.id);
             const isExpanded = expandedCard === card.id;
-            const disponivel = card.limite - currentInvoice;
+            const disponivel = card.limite - totalInvoice;
 
             return (
               <div key={card.id} className="stat-card">
@@ -243,29 +296,50 @@ export default function CreditCards() {
                     <CardIcon className="h-5 w-5 text-white" />
                   </div>
                   <div className="flex gap-0.5">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(card)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => handleEdit(card)}
+                    >
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(card.id)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive"
+                      onClick={() => handleDelete(card.id)}
+                    >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 </div>
 
-                <h3 className="font-medium text-foreground mb-3">{card.descricao}</h3>
+                <h3 className="font-medium text-foreground mb-3">
+                  {card.descricao}
+                </h3>
 
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Limite</span>
-                    <span className="font-medium">{formatCurrency(card.limite)}</span>
+                    <span className="font-medium">
+                      {formatCurrency(card.limite)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Fatura Atual</span>
-                    <span className="font-medium text-expense">{formatCurrency(currentInvoice)}</span>
+                    <span className="font-medium text-expense">
+                      {formatCurrency(currentInvoice)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Disponível</span>
-                    <span className={cn("font-medium", disponivel >= 0 ? 'text-income' : 'text-expense')}>
+                    <span
+                      className={cn(
+                        "font-medium",
+                        disponivel >= 0 ? "text-income" : "text-expense",
+                      )}
+                    >
                       {formatCurrency(disponivel)}
                     </span>
                   </div>
@@ -277,19 +351,30 @@ export default function CreditCards() {
 
                 {invoices.length > 0 && (
                   <div className="mt-3 pt-3 border-t">
-                    <button 
+                    <button
                       className="flex items-center justify-between w-full text-sm text-muted-foreground hover:text-foreground"
-                      onClick={() => setExpandedCard(isExpanded ? null : card.id)}
+                      onClick={() =>
+                        setExpandedCard(isExpanded ? null : card.id)
+                      }
                     >
                       <span>Faturas ({invoices.length})</span>
-                      {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      {isExpanded ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
                     </button>
                     {isExpanded && (
                       <div className="mt-2 space-y-1">
                         {invoices.map((invoice) => (
-                          <div key={invoice.date} className="flex justify-between text-xs py-1">
+                          <div
+                            key={invoice.date}
+                            className="flex justify-between text-xs py-1"
+                          >
                             <span className="capitalize">{invoice.label}</span>
-                            <span className="font-medium">{formatCurrency(invoice.valor)}</span>
+                            <span className="font-medium">
+                              {formatCurrency(invoice.valor)}
+                            </span>
                           </div>
                         ))}
                       </div>

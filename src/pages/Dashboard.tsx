@@ -6,14 +6,17 @@ import { CategoryPieChart } from "@/components/dashboard/CategoryPieChart";
 import { AccountsTable } from "@/components/dashboard/AccountsTable";
 import { BalanceProjectionChart } from "@/components/dashboard/BalanceProjectionChart";
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
+import { FutureInvoices } from "@/components/dashboard/FutureInvoices";
 import { useFinance } from "@/contexts/FinanceContext";
+import { useCreditCards } from "@/hooks/useCreditCards";
 import { TrendingUp, TrendingDown, Wallet, Receipt, Plus } from "lucide-react";
-import { format, startOfMonth, endOfMonth } from "date-fns";
+import { format, startOfMonth, endOfMonth, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Button } from "@/components/ui/button";
+// import { obterDataExibicaoComMapa } from "@/lib/creditCardHelpers";
 
 export default function Dashboard() {
   const { transactions, accounts, getAccountBalance } = useFinance();
+  const { creditCards } = useCreditCards();
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   const stats = useMemo(() => {
@@ -21,7 +24,12 @@ export default function Dashboard() {
     const monthEnd = endOfMonth(selectedDate);
 
     const monthlyTransactions = transactions.filter((t) => {
-      const date = new Date(t.data + "T12:00:00");
+      let date: Date;
+      if (t.cartao && t.fatura_mes) {
+        date = addMonths(new Date(t.fatura_mes + "-01T12:00:00"), 1);
+      } else {
+        date = new Date(t.data + "T12:00:00");
+      }
       return date >= monthStart && date <= monthEnd;
     });
 
@@ -101,6 +109,15 @@ export default function Dashboard() {
         <BalanceProjectionChart />
         <CategoryPieChart selectedDate={selectedDate} />
         <RevenueExpenseChart />
+      </div>
+
+      {/* Próximas Faturas */}
+      <div className="mb-6">
+        <FutureInvoices
+          creditCards={creditCards}
+          transactions={transactions}
+          mesesAMostrar={3}
+        />
       </div>
 
       {/* Bottom Row */}

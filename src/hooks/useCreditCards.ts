@@ -114,7 +114,6 @@ export function useCreditCards() {
       .select("id")
       .eq("cartao_id", id);
 
-    console.log("data", data);
     if (data.length > 0) {
       toast.error("Cartão com transações vinculadas não pode ser excluída");
       return false;

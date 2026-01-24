@@ -122,7 +122,6 @@ export function useAccounts() {
       .select("id")
       .eq("conta_id", id);
 
-    console.log("data", data);
     if (data.length > 0) {
       toast.error("Conta com transações vinculadas não pode ser excluída");
       return false;
