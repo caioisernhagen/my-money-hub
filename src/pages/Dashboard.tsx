@@ -24,12 +24,10 @@ export default function Dashboard() {
     const monthEnd = endOfMonth(selectedDate);
 
     const monthlyTransactions = transactions.filter((t) => {
-      let date: Date;
-      if (t.cartao && t.fatura_mes) {
-        date = addMonths(new Date(t.fatura_mes + "-01T12:00:00"), 1);
-      } else {
-        date = new Date(t.data + "T12:00:00");
-      }
+      const date =
+        t.cartao && t.fatura_mes
+          ? new Date(t.fatura_mes + "-01T12:00:00")
+          : new Date(t.data + "T12:00:00");
       return date >= monthStart && date <= monthEnd;
     });
 

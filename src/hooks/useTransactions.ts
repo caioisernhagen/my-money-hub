@@ -361,10 +361,7 @@ export function useTransactions() {
       return transactions.filter((t) => {
         const date =
           t.cartao && t.fatura_mes
-            ? format(
-                addMonths(new Date(t.fatura_mes + "-01T12:00:00"), 1),
-                "yyyy-MM-dd",
-              )
+            ? format(new Date(t.fatura_mes + "-01T12:00:00"), "yyyy-MM-dd")
             : t.data;
         if (filters.dataInicio && date < filters.dataInicio) return false;
         if (filters.dataFim && date > filters.dataFim) return false;

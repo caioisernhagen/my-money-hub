@@ -194,12 +194,10 @@ export function getMonthlyDataForPeriod(
   const monthEnd = endOfMonth(new Date(year, month));
 
   const monthTransactions = transactions.filter((t) => {
-    let date: Date;
-    if (t.cartao && t.fatura_mes) {
-      date = addMonths(new Date(t.fatura_mes + "-01T12:00:00"), 1);
-    } else {
-      date = new Date(t.data + "T12:00:00");
-    }
+    const date =
+      t.cartao && t.fatura_mes
+        ? new Date(t.fatura_mes + "-01T12:00:00")
+        : new Date(t.data + "T12:00:00");
     return date >= monthStart && date <= monthEnd;
   });
 
@@ -220,13 +218,10 @@ export function getMonthlyData(
   const months: { [key: string]: { receitas: number; despesas: number } } = {};
 
   transactions.forEach((t) => {
-    let date: Date;
-    if (t.cartao && t.fatura_mes) {
-      date = addMonths(new Date(t.fatura_mes + "-01T12:00:00"), 1);
-    } else {
-      date = new Date(t.data + "T12:00:00");
-    }
-
+    const date =
+      t.cartao && t.fatura_mes
+        ? new Date(t.fatura_mes + "-01T12:00:00")
+        : new Date(t.data + "T12:00:00");
     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 
     if (!months[monthKey]) {
@@ -277,12 +272,10 @@ export function getCategoryExpenses(
   const monthEnd = endOfMonth(targetDate);
 
   const monthlyExpenses = transactions.filter((t) => {
-    let date: Date;
-    if (t.cartao && t.fatura_mes) {
-      date = addMonths(new Date(t.fatura_mes + "-01T12:00:00"), 1);
-    } else {
-      date = new Date(t.data + "T12:00:00");
-    }
+    const date =
+      t.cartao && t.fatura_mes
+        ? new Date(t.fatura_mes + "-01T12:00:00")
+        : new Date(t.data + "T12:00:00");
     return t.tipo === "Despesa" && date >= monthStart && date <= monthEnd;
   });
 

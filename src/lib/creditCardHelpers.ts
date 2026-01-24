@@ -48,7 +48,7 @@ export function calcularDataFechamento(
 ): string {
   const mes = parse(mesFatura, "yyyy-MM", new Date());
   return format(
-    new Date(mes.getFullYear(), mes.getMonth(), dataFechamento),
+    new Date(mes.getFullYear(), mes.getMonth() - 1, dataFechamento),
     "yyyy-MM-dd",
   );
 }
@@ -64,7 +64,7 @@ export function calcularDataVencimento(
   diaVencimento: number,
 ): string {
   const mes = parse(mesFatura, "yyyy-MM", new Date());
-  const mesSeguinte = addMonths(mes, 1);
+  const mesSeguinte = mes;
 
   return format(
     new Date(mesSeguinte.getFullYear(), mesSeguinte.getMonth(), diaVencimento),
@@ -249,10 +249,7 @@ export function calcularImpactoMensal(
   proximoMes: { receitas: number; despesas: number };
 } {
   const mesAtualStr = mesFatura || format(new Date(), "yyyy-MM");
-  const proximoMesStr = format(
-    addMonths(new Date(mesAtualStr + "-01"), 1),
-    "yyyy-MM",
-  );
+  const proximoMesStr = format(new Date(mesAtualStr + "-01"), "yyyy-MM");
 
   const transacoesAtual = transacoes.filter((t) => {
     if (t.cartao) return false; // Cartão não impacta mês atual

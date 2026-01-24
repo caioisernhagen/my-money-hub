@@ -78,13 +78,16 @@ export default function CreditCards() {
 
   // Calcular fatura atual
   const getCurrentInvoiceTotal = (cardId: string) => {
-    const currentMonth = format(startOfMonth(new Date()), "yyyy-MM");
+    const currentMonth = format(
+      addMonths(startOfMonth(new Date()), +1),
+      "yyyy-MM",
+    );
     const cardTransactions = transactions.filter(
       (t) => t.cartao_id === cardId && t.fatura_mes === currentMonth,
     );
     return cardTransactions.reduce((sum, t) => sum + t.valor, 0);
   };
-  // Calcular fatura atual
+  // Calcular fatura total
   const getInvoiceTotal = (cardId: string) => {
     const cardTransactions = transactions.filter((t) => t.cartao_id === cardId);
     return cardTransactions.reduce((sum, t) => sum + t.valor, 0);
