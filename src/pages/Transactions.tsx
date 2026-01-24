@@ -249,7 +249,7 @@ export default function Transactions() {
     const options: { value: string; label: string }[] = [];
 
     for (let i = 0; i < 12; i++) {
-      const faturaMonth = addMonths(startOfMonth(transactionDate), i);
+      const faturaMonth = addMonths(startOfMonth(transactionDate), i + 1);
       const faturaDate = format(faturaMonth, "yyyy-MM");
       const label = format(faturaMonth, "MMMM'/'yyyy", { locale: ptBR });
       options.push({ value: faturaDate, label: `${label}` });

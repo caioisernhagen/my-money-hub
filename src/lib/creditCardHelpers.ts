@@ -44,11 +44,13 @@ export function calcularMesFatura(
  */
 export function calcularDataFechamento(
   mesFatura: string,
-  dataFechamento: number,
+  diaVencimento: number,
+  diaFechamento: number,
 ): string {
   const mes = parse(mesFatura, "yyyy-MM", new Date());
+  const variacao = diaVencimento < diaFechamento ? 1 : 0;
   return format(
-    new Date(mes.getFullYear(), mes.getMonth() - 1, dataFechamento),
+    new Date(mes.getFullYear(), mes.getMonth() - variacao, diaFechamento),
     "yyyy-MM-dd",
   );
 }
@@ -62,12 +64,16 @@ export function calcularDataFechamento(
 export function calcularDataVencimento(
   mesFatura: string,
   diaVencimento: number,
+  diaFechamento: number,
 ): string {
   const mes = parse(mesFatura, "yyyy-MM", new Date());
-  const mesSeguinte = mes;
-
+  const variacao =
+    diaVencimento < diaFechamento ||
+    (diaFechamento < diaVencimento && diaVencimento <= 31)
+      ? 0
+      : 1;
   return format(
-    new Date(mesSeguinte.getFullYear(), mesSeguinte.getMonth(), diaVencimento),
+    new Date(mes.getFullYear(), mes.getMonth() + variacao, diaVencimento),
     "yyyy-MM-dd",
   );
 }
@@ -128,11 +134,13 @@ export function calcularFaturaCompleta(
   const mesFatura = calcularMesFatura(dataLancamento, cartao.data_fechamento);
   const dataFechamento = calcularDataFechamento(
     mesFatura,
+    cartao.data_vencimento,
     cartao.data_fechamento,
   );
   const dataVencimento = calcularDataVencimento(
     mesFatura,
     cartao.data_vencimento,
+    cartao.data_fechamento,
   );
 
   return {
@@ -192,11 +200,13 @@ export function gerarInfoFatura(
   const status = calcularStatusFatura(transacoesFatura);
   const dataFechamento = calcularDataFechamento(
     mesFatura,
+    cartao.data_vencimento,
     cartao.data_fechamento,
   );
   const dataVencimento = calcularDataVencimento(
     mesFatura,
     cartao.data_vencimento,
+    cartao.data_fechamento,
   );
 
   return {
@@ -318,7 +328,11 @@ export function obterDataExibicao(
   }
 
   // Para transações de cartão, retorna a data de vencimento da fatura
-  return calcularDataVencimento(transaction.fatura_mes, cartao.data_vencimento);
+  return calcularDataVencimento(
+    transaction.fatura_mes,
+    cartao.data_vencimento,
+    cartao.data_fechamento,
+  );
 }
 
 /**
@@ -340,5 +354,9 @@ export function obterDataExibicaoComMapa(
   const cartao = creditCardsMap.get(transaction.cartao_id);
   if (!cartao) return transaction.data;
 
-  return calcularDataVencimento(transaction.fatura_mes, cartao.data_vencimento);
+  return calcularDataVencimento(
+    transaction.fatura_mes,
+    cartao.data_vencimento,
+    cartao.data_fechamento,
+  );
 }
