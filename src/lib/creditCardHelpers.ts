@@ -3,6 +3,7 @@ import {
   Transaction,
   InvoiceInfo,
   InvoiceStatus,
+  Category,
 } from "@/types/finance";
 import { addMonths, format, parse, lastDayOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";

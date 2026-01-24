@@ -9,6 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import * as LucideIcons from "lucide-react";
+import { useFinance } from "@/contexts/FinanceContext";
+import { IconBackground } from "./IconBackground";
 
 interface InvoiceDetailsDialogProps {
   invoice: InvoiceInfo | null;
@@ -24,7 +27,7 @@ export function InvoiceDetailsDialog({
   onOpenChange,
 }: InvoiceDetailsDialogProps) {
   if (!invoice || !creditCard) return null;
-
+  const { categories } = useFinance();
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "pago":
@@ -167,28 +170,49 @@ export function InvoiceDetailsDialog({
                   Nenhuma transação nesta fatura
                 </p>
               ) : (
-                invoice.transacoes.map((transacao) => (
-                  <div
-                    key={transacao.id}
-                    className="flex justify-between items-center p-3 bg-gray-50 rounded border border-gray-200 hover:bg-gray-100 transition"
-                  >
-                    <div className="flex-1">
-                      <p className="text-xs font-medium">
-                        {transacao.descricao}
-                      </p>
+                invoice.transacoes.map((transacao) => {
+                  const cat = categories.find(
+                    (c) => c.id === transacao.categoria_id,
+                  );
+
+                  return (
+                    <div
+                      key={transacao.id}
+                      className="flex justify-between items-center p-3 bg-gray-50 rounded border border-gray-200 hover:bg-gray-100 transition"
+                    >
+                      <div className="flex items-center gap-3">
+                        <IconBackground
+                          icon={cat.icone as keyof typeof LucideIcons}
+                          color={cat.cor}
+                          text="" //{cat.nome + " - " + transacao.descricao}
+                        />
+                        <div>
+                          <p className="font-medium text-xs text-foreground flex items-center gap-1.5">
+                            {transacao.descricao}
+                          </p>
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 text-xs text-muted-foreground">
+                            {cat && (
+                              <div className="flex items-center gap-1">
+                                <span>{cat.nome}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex-1"></div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">
+                          {formatCurrency(transacao.valor)}
+                        </span>
+                        {transacao.pago ? (
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 text-red-500" />
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">
-                        {formatCurrency(transacao.valor)}
-                      </span>
-                      {transacao.pago ? (
-                        <CheckCircle2 className="w-4 h-4 text-green-500" />
-                      ) : (
-                        <AlertCircle className="w-4 h-4 text-red-500" />
-                      )}
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>

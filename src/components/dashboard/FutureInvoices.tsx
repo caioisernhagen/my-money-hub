@@ -118,8 +118,6 @@ export function FutureInvoices({
                 faturasMapa.has(mes),
               );
 
-              console.log(proximaFatura);
-
               if (!proximaFatura) {
                 return (
                   <Card key={card.id} className="border-dashed">
