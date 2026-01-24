@@ -79,7 +79,7 @@ export function InvoiceDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-80 max-h-[100vh] overflow-y-auto">
+      <DialogContent className=" max-h-[100vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 mt-3 text-ms">
             Fatura de {invoice.label}

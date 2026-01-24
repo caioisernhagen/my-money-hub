@@ -92,9 +92,9 @@ export function FutureInvoices({
     <>
       <div className="space-y-4">
         <div>
-          <h2 className="text-lg font-semibold">Próximas Faturas</h2>
+          <h2 className="text-lg font-semibold">Próxima Fatura</h2>
           <p className="text-sm text-gray-500">
-            Lançamentos que serão cobrados nos próximos meses
+            Lançamentos que serão cobrados no próximo mês
           </p>
         </div>
 
@@ -113,12 +113,12 @@ export function FutureInvoices({
                 transactions,
                 card.id,
               );
-              console.log(faturasMapa);
-              console.log(mesesFuturos);
 
               const proximaFatura = mesesFuturos.find((mes) =>
                 faturasMapa.has(mes),
               );
+
+              console.log(proximaFatura);
 
               if (!proximaFatura) {
                 return (
