@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -39,11 +39,15 @@
     /* Finance specific tokens */
     --income: 160 70% 40%;
     --income-foreground: 0 0% 100%;
-    --income-muted: 160 70% 96%;
-    
+    --income-muted: 160 55% 90%;
+
     --expense: 0 75% 55%;
     --expense-foreground: 0 0% 100%;
-    --expense-muted: 0 75% 97%;
+    --expense-muted: 0 55% 90%;
+
+    --pending: 60, 20%, 20%;
+    --pending-foreground: 0 0% 100%;
+    --pending-muted: 50 80% 80%;
 
     --chart-1: 220 80% 55%;
     --chart-2: 160 70% 40%;
@@ -94,10 +98,14 @@
     --income: 160 70% 50%;
     --income-foreground: 0 0% 100%;
     --income-muted: 160 50% 12%;
-    
+
     --expense: 0 70% 55%;
     --expense-foreground: 0 0% 100%;
     --expense-muted: 0 50% 12%;
+
+    --pending: 60, 75%, 55%;
+    --pending-foreground: 0 0% 100%;
+    --pending-muted: 60 75% 97%;
 
     --sidebar-background: 220 25% 4%;
     --sidebar-foreground: 220 10% 95%;
@@ -119,7 +127,12 @@
     @apply bg-background text-foreground font-sans antialiased;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-display font-medium tracking-tight;
   }
 }
@@ -135,6 +148,10 @@
 
   .expense-badge {
     @apply bg-expense-muted text-expense;
+  }
+
+  .pending-badge {
+    @apply bg-pending-muted text-pending;
   }
 
   .stat-card {

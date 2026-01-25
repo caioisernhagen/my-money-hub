@@ -480,41 +480,6 @@ export default function Transactions() {
         <div className="flex flex-col gap-3 mb-4">
           {/* Top Bar - Busca, Ordenação e Filtros */}
           <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center sm:justify-between">
-            {/* Busca com botão interno */}
-            <div className="relative w-full sm:flex-1">
-              <Input
-                placeholder="Buscar por descrição"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="h-9 w-full text-sm stat-card pr-9"
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm("")}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  title="Limpar busca"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-
-            {/* Ordenação */}
-            <Select
-              value={sortBy}
-              onValueChange={(value: any) => setSortBy(value)}
-            >
-              <SelectTrigger className="h-9 w-full sm:w-36 text-sm stat-card">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="data-az">▲ Data</SelectItem>
-                <SelectItem value="data-za">▼ Data</SelectItem>
-                <SelectItem value="descricao-az">▲ Descrição</SelectItem>
-                <SelectItem value="descricao-za">▼ Descrição</SelectItem>
-              </SelectContent>
-            </Select>
-
             {/* Botão Filtros */}
             <Button
               variant="outline"
@@ -900,6 +865,40 @@ export default function Transactions() {
           {/* Filtros Expansíveis */}
           {showFilters && (
             <div className="stat-card grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-2 p-3 rounded-lg bg-secondary/30 border border-secondary/50">
+              {/* Busca com botão interno */}
+              <div className="relative w-full sm:flex-1">
+                <Input
+                  placeholder="Buscar por descrição"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-9 w-full text-sm stat-card pr-9"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm("")}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    title="Limpar busca"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Ordenação */}
+              <Select
+                value={sortBy}
+                onValueChange={(value: any) => setSortBy(value)}
+              >
+                <SelectTrigger className="h-9 w-full sm:w-36 text-sm stat-card">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="data-az">▲ Data</SelectItem>
+                  <SelectItem value="data-za">▼ Data</SelectItem>
+                  <SelectItem value="descricao-az">▲ Descrição</SelectItem>
+                  <SelectItem value="descricao-za">▼ Descrição</SelectItem>
+                </SelectContent>
+              </Select>
               {/* Conta */}
               <div>
                 <Label className="text-xs mb-1 block">Conta</Label>

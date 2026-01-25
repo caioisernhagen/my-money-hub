@@ -97,7 +97,7 @@ export default function Dashboard() {
           title="Pendentes"
           value={formatCurrency(stats.pendentes)}
           icon={Receipt}
-          variant="default"
+          variant="pending"
         />
       </div>
 

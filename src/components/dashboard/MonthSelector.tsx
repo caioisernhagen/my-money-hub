@@ -40,10 +40,10 @@ export function MonthSelector({
 
       <Button
         variant={isCurrentMonth ? "default" : "outline"}
-        className="min-w-[240px] capitalize"
+        className="min-w-[100px] capitalize"
         onClick={handleCurrentMonth}
       >
-        {format(selectedDate, "MMMM yyyy", { locale: ptBR })}
+        {format(selectedDate, "MMM/yy", { locale: ptBR })}
       </Button>
 
       <Button
