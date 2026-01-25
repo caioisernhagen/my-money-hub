@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format, addMonths, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useState } from "react";
 
 interface MonthSelectorProps {
   selectedDate: Date;
@@ -12,20 +13,35 @@ export function MonthSelector({
   selectedDate,
   onDateChange,
 }: MonthSelectorProps) {
-  const handlePrevMonth = () => {
-    onDateChange(subMonths(selectedDate, 1));
+  const [baseMonth, setBaseMonth] = useState(new Date());
+  const monthsToShow =
+    window.innerWidth >= 500 && window.innerWidth <= 640
+      ? 5
+      : window.innerWidth <= 690
+        ? 3
+        : window.innerWidth <= 1170
+          ? 5
+          : 7;
+
+  const handlePrev = () => {
+    setBaseMonth(subMonths(baseMonth, monthsToShow));
   };
 
-  const handleNextMonth = () => {
-    onDateChange(addMonths(selectedDate, 1));
+  const handleNext = () => {
+    setBaseMonth(addMonths(baseMonth, monthsToShow));
   };
 
-  const handleCurrentMonth = () => {
-    onDateChange(new Date());
+  const handleCurrentMonth = (date: Date) => {
+    console.log(date);
+    onDateChange(date);
   };
 
-  const isCurrentMonth =
-    format(selectedDate, "yyyy-MM") === format(new Date(), "yyyy-MM");
+  const months = Array.from({ length: monthsToShow }, (_, i) => {
+    i = i - (monthsToShow === 7 ? 3 : monthsToShow === 5 ? 2 : 1);
+    const date = new Date(baseMonth);
+    date.setMonth(baseMonth.getMonth() + i);
+    return date;
+  });
 
   return (
     <div className="flex w-full items-center justify-between gap-2 rounded-lg sm:w-auto sm:justify-center">
@@ -33,24 +49,30 @@ export function MonthSelector({
         variant="outline"
         size="icon"
         className="h-8 w-8"
-        onClick={handlePrevMonth}
+        onClick={handlePrev}
       >
         <ChevronLeft className="h-4 w-4" />
       </Button>
-
-      <Button
-        variant={isCurrentMonth ? "default" : "outline"}
-        className="min-w-[100px] capitalize"
-        onClick={handleCurrentMonth}
-      >
-        {format(selectedDate, "MMM/yy", { locale: ptBR })}
-      </Button>
+      {months.map((date, index) => (
+        <Button
+          key={index}
+          variant={
+            format(selectedDate, "yyyy-MM") === format(date, "yyyy-MM")
+              ? "default"
+              : "outline"
+          }
+          className="min-w-[80px] capitalize"
+          onClick={() => handleCurrentMonth(date)}
+        >
+          {format(date, "MMM/yy", { locale: ptBR })}
+        </Button>
+      ))}
 
       <Button
         variant="outline"
         size="icon"
         className="h-8 w-8"
-        onClick={handleNextMonth}
+        onClick={handleNext}
       >
         <ChevronRight className="h-4 w-4" />
       </Button>
