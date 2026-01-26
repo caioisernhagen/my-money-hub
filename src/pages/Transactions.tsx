@@ -610,11 +610,14 @@ export default function Transactions() {
             <div className="stat-card grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-2 p-3 rounded-lg bg-secondary/30 border border-secondary/50">
               {/* Busca com botão interno */}
               <div className="relative w-full sm:flex-1">
+                <Label className="text-xs mb-1 block">
+                  Busca por descrição
+                </Label>
                 <Input
-                  placeholder="Buscar por descrição"
+                  // placeholder="Buscar por descrição"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="h-9 w-full text-sm stat-card pr-9"
+                  className="h-8 text-xs"
                 />
                 {searchTerm && (
                   <button
@@ -628,20 +631,23 @@ export default function Transactions() {
               </div>
 
               {/* Ordenação */}
-              <Select
-                value={sortBy}
-                onValueChange={(value: any) => setSortBy(value)}
-              >
-                <SelectTrigger className="h-9 w-full sm:w-36 text-sm stat-card">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="data-az">▲ Data</SelectItem>
-                  <SelectItem value="data-za">▼ Data</SelectItem>
-                  <SelectItem value="descricao-az">▲ Descrição</SelectItem>
-                  <SelectItem value="descricao-za">▼ Descrição</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="relative w-full sm:flex-1">
+                <Label className="text-xs mb-1 block">Ordenação</Label>
+                <Select
+                  value={sortBy}
+                  onValueChange={(value: any) => setSortBy(value)}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="data-az">▲ Data</SelectItem>
+                    <SelectItem value="data-za">▼ Data</SelectItem>
+                    <SelectItem value="descricao-az">▲ Descrição</SelectItem>
+                    <SelectItem value="descricao-za">▼ Descrição</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               {/* Conta */}
               <div>
                 <Label className="text-xs mb-1 block">Conta</Label>
