@@ -177,8 +177,8 @@ export function NewTransactionDialog({
   }, [formData.cartao, formData.cartao_id, formData.data, creditCards]);
 
   const defaultTrigger = showTrigger ? (
-    <Button size="sm" className="gap-2">
-      <Plus className="h-4 w-4" />
+    <Button className="gap-2">
+      <Plus className="h-6 w-6" />
       Novo Lançamento
     </Button>
   ) : null;

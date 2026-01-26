@@ -13,18 +13,14 @@ import Transactions from "./pages/Transactions";
 import CreditCards from "./pages/CreditCards";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
-import InstallButton from "./components/InstallButton";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <InstallButton />
     <TooltipProvider>
       <AuthProvider>
-        <InstallButton />
         <BrowserRouter basename={import.meta.env.DEV ? "/" : "/my-money-hub"}>
-          <InstallButton />
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route

@@ -25,4 +25,13 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+
+  build: {
+    rollupOptions: {
+      // Garante que service-worker.js e manifest.json não sejam processados
+      input: {
+        main: path.resolve(__dirname, "index.html"),
+      },
+    },
+  },
 }));

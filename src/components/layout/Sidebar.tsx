@@ -11,6 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import InstallButton from "../InstallButton";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
@@ -62,6 +63,7 @@ export function Sidebar() {
           <div className="text-xs text-sidebar-foreground/60 truncate px-1">
             {user?.email}
           </div>
+          <InstallButton />
           <Button
             variant="outline"
             className="w-full gap-2"
