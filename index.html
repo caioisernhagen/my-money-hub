@@ -1,27 +1,48 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- TODO: Set the document title to the name of your application -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <title>Controle Financeiro</title>
     <meta name="description" content="Projeto para controle financeiro" />
     <meta name="author" content="Caio Isernhagen" />
 
-    <!-- TODO: Update og:title to match your application name -->
+    <!-- iOS Meta Tags -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="MyFinance" />
+
+    <!-- Ícones e Manifest -->
+    <link rel="icon" href="/favicon.png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#0d6efd" />
+
     <meta property="og:title" content="Controle Financeiro" />
     <meta
       property="og:description"
       content="Projeto para controle financeiro"
     />
-    <link rel="icon" href="public/favicon.png" sizes="32x32" />
-    <link rel="apple-touch-icon" href="public/favicon.png" />
-    <link rel="manifest" href="/public/manifest.json" />
-    <meta name="theme-color" content="#0d6efd" />
   </head>
 
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/service-worker.js")
+            .then((reg) => console.log("SW registrado!", reg))
+            .catch((err) => console.log("Erro no SW", err));
+        });
+      }
+    </script>
   </body>
 </html>
