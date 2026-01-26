@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
 
 interface StatCardProps {
   title: string;
@@ -13,6 +14,7 @@ interface StatCardProps {
     value: number;
     label: string;
   };
+  selectedDate?: Date;
 }
 
 export function StatCard({
@@ -22,14 +24,17 @@ export function StatCard({
   icon: Icon,
   variant = "default",
   trend,
+  selectedDate,
 }: StatCardProps) {
   const navigate = useNavigate();
   function handleClick() {
     if (variant === "income" && title !== "Saldo Mensal") {
-      navigate("/lancamentos?tipo=receita&mes=atual");
+      const mesAno = selectedDate ? format(selectedDate, "yyyy-MM") : "";
+      navigate(`/lancamentos?tipo=receita&mes=${mesAno}`);
     }
     if (variant === "expense" && title !== "Saldo Mensal") {
-      navigate("/lancamentos?tipo=despesa&mes=atual");
+      const mesAno = selectedDate ? format(selectedDate, "yyyy-MM") : "";
+      navigate(`/lancamentos?tipo=despesa&mes=${mesAno}`);
     }
   }
 

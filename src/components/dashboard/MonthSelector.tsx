@@ -32,7 +32,6 @@ export function MonthSelector({
   };
 
   const handleCurrentMonth = (date: Date) => {
-    console.log(date);
     onDateChange(date);
   };
 

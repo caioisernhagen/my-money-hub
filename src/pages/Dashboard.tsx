@@ -7,17 +7,24 @@ import { AccountsTable } from "@/components/dashboard/AccountsTable";
 import { BalanceProjectionChart } from "@/components/dashboard/BalanceProjectionChart";
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
 import { FutureInvoices } from "@/components/dashboard/FutureInvoices";
+import { NewTransactionDialog } from "@/components/NewTransactionDialog";
 import { useFinance } from "@/contexts/FinanceContext";
 import { useCreditCards } from "@/hooks/useCreditCards";
 import { TrendingUp, TrendingDown, Wallet, Receipt, Plus } from "lucide-react";
-import { format, startOfMonth, endOfMonth, addMonths } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
-// import { obterDataExibicaoComMapa } from "@/lib/creditCardHelpers";
 
 export default function Dashboard() {
-  const { transactions, accounts, getAccountBalance } = useFinance();
+  const {
+    transactions,
+    accounts,
+    getAccountBalance,
+    categories,
+    addTransaction,
+  } = useFinance();
   const { creditCards } = useCreditCards();
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const stats = useMemo(() => {
     const monthStart = startOfMonth(selectedDate);
@@ -80,24 +87,28 @@ export default function Dashboard() {
           value={formatCurrency(stats.receitas)}
           icon={TrendingUp}
           variant="income"
+          selectedDate={selectedDate}
         />
         <StatCard
           title="Despesas"
           value={formatCurrency(stats.despesas)}
           icon={TrendingDown}
           variant="expense"
+          selectedDate={selectedDate}
         />
         <StatCard
           title="Saldo Mensal"
           value={formatCurrency(stats.saldo)}
           icon={Wallet}
           variant={stats.saldo >= 0 ? "income" : "expense"}
+          selectedDate={selectedDate}
         />
         <StatCard
           title="Pendentes"
           value={formatCurrency(stats.pendentes)}
           icon={Receipt}
           variant="pending"
+          selectedDate={selectedDate}
         />
       </div>
 
@@ -120,6 +131,28 @@ export default function Dashboard() {
 
       {/* Bottom Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-20 lg:pb-0"></div>
+
+      {/* Floating Action Button para novo lançamento */}
+      <NewTransactionDialog
+        isOpen={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        onSubmit={async (data) => {
+          const result = await addTransaction(data);
+          return !!result;
+        }}
+        categories={categories}
+        accounts={accounts}
+        creditCards={creditCards}
+        trigger={
+          <button
+            className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-primary text-white shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center justify-center"
+            title="Novo lançamento"
+          >
+            <Plus className="h-6 w-6" />
+          </button>
+        }
+        showTrigger={false}
+      />
     </MainLayout>
   );
 }

@@ -1,7 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useFinance } from "@/contexts/FinanceContext";
 import { useCreditCards } from "@/hooks/useCreditCards";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -63,6 +64,7 @@ import { ptBR } from "date-fns/locale";
 import * as LucideIcons from "lucide-react";
 
 export default function Transactions() {
+  const [searchParams] = useSearchParams();
   const {
     transactions,
     categories,
@@ -91,7 +93,33 @@ export default function Transactions() {
   const [sortBy, setSortBy] = useState<
     "data-za" | "data-az" | "descricao-az" | "descricao-za"
   >("data-az");
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
+
+  // Processar parâmetros da URL
+  useEffect(() => {
+    const tipo = searchParams.get("tipo");
+    const mes = searchParams.get("mes");
+
+    if (tipo && (tipo === "receita" || tipo === "despesa")) {
+      setFilters((prev) => ({
+        ...prev,
+        tipo: tipo === "receita" ? "Receita" : "Despesa",
+      }));
+    }
+
+    if (mes) {
+      try {
+        const [year, month] = mes.split("-");
+        if (year && month) {
+          const newDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+          setSelectedDate(newDate);
+        }
+      } catch {
+        // Se erro ao parsear, ignora
+      }
+    }
+  }, [searchParams]);
 
   const [formData, setFormData] = useState({
     descricao: "",
@@ -357,9 +385,20 @@ export default function Transactions() {
       key !== "dataInicio" && key !== "dataFim" && v !== undefined && v !== "",
   );
 
-  // Agrupar transações por data e calcular saldo projetado
+  // Agrupar transações por data e cartão
   const transactionsByDate = useMemo(() => {
-    const grouped: { [key: string]: Transaction[] } = {};
+    const grouped: {
+      [key: string]: {
+        cards: {
+          [cardKey: string]: {
+            name: string;
+            transactions: Transaction[];
+            total: number;
+          };
+        };
+        allTransactions: Transaction[];
+      };
+    } = {};
     const accountBalances: { [key: string]: number } = {};
 
     // Inicializar saldos das contas
@@ -367,31 +406,69 @@ export default function Transactions() {
       accountBalances[account.id] = account.saldo_inicial || 0;
     });
 
-    // Agrupar por data (usando data de exibição correta)
+    // Agrupar por data e cartão
     filteredTransactions.forEach((transaction) => {
-      //transaction.data = obterDataExibicaoComMapa(transaction, creditCardsMap);
-      const dateKey = transaction.data;
+      const card = creditCards.find((c) => c.id === transaction.cartao_id);
+      const day = card?.data_vencimento.toString().padStart(2, "0");
+
+      // Data de exibição: vencimento para cartão, data original para conta
+      const dateKey =
+        transaction.cartao && card
+          ? `${transaction.fatura_mes}-${day}`
+          : transaction.data;
+
+      const cardKey = transaction.cartao_id || "sem-cartao";
+      const cardName = card ? card.descricao : "Sem cartão";
+
       if (!grouped[dateKey]) {
-        grouped[dateKey] = [];
+        grouped[dateKey] = {
+          cards: {},
+          allTransactions: [],
+        };
       }
-      grouped[dateKey].push(transaction);
+
+      if (!grouped[dateKey].cards[cardKey]) {
+        grouped[dateKey].cards[cardKey] = {
+          name: cardName,
+          transactions: [],
+          total: 0,
+        };
+      }
+
+      grouped[dateKey].cards[cardKey].transactions.push(transaction);
+      grouped[dateKey].cards[cardKey].total +=
+        transaction.tipo === "Receita" ? transaction.valor : -transaction.valor;
+      grouped[dateKey].allTransactions.push(transaction);
     });
 
-    // Ordenar datas conforme preferência do usuário
-    const sortedDates = Object.keys(grouped);
+    // Ordenar datas
+    const sortedDates = Object.keys(grouped).sort((a, b) => {
+      if (sortBy === "data-za") {
+        return new Date(b).getTime() - new Date(a).getTime();
+      } else {
+        return new Date(a).getTime() - new Date(b).getTime();
+      }
+    });
 
     // Calcular saldo projetado para cada data
     const result: {
       date: string;
-      transactions: Transaction[];
+      cards: {
+        [cardKey: string]: {
+          name: string;
+          transactions: Transaction[];
+          total: number;
+        };
+      };
       projectedBalance: number;
+      allTransactions: Transaction[];
     }[] = [];
 
     sortedDates.forEach((date) => {
-      const dayTransactions = grouped[date] || [];
+      const dayData = grouped[date];
       let dayBalance = 0;
 
-      dayTransactions.forEach((transaction) => {
+      dayData.allTransactions.forEach((transaction) => {
         const value =
           transaction.tipo === "Receita"
             ? transaction.valor
@@ -402,16 +479,17 @@ export default function Transactions() {
 
       result.push({
         date,
-        transactions: dayTransactions,
+        cards: dayData.cards,
         projectedBalance: Object.values(accountBalances).reduce(
           (sum, bal) => sum + bal,
           0,
         ),
+        allTransactions: dayData.allTransactions,
       });
     });
 
     return result;
-  }, [filteredTransactions, accounts, sortBy]);
+  }, [filteredTransactions, accounts, sortBy, creditCards]);
 
   if (loading) {
     return (
@@ -1154,122 +1232,285 @@ export default function Transactions() {
               {filteredTransactions.length} lançamento(s)
             </div>
 
-            <div className="space-y-0.5">
+            <div className="space-y-4">
               {transactionsByDate.map((dayData) => (
-                <div key={dayData.date}>
-                  {/* Transações do dia */}
-                  <div className="space-y-1">
-                    {dayData.transactions.map((transaction) => {
-                      const category = categories.find(
-                        (c) => c.id === transaction.categoria_id,
-                      );
-                      // const account = accounts.find(
-                      //   (a) => a.id === transaction.conta_id,
-                      // );
-                      const isIncome = transaction.tipo === "Receita";
+                <div key={dayData.date} className="space-y-2">
+                  {/* Agrupar por cartão */}
+                  {Object.entries(dayData.cards).map(([cardKey, cardData]) => {
+                    const isSemCartao = cardKey === "sem-cartao";
+                    const isExpanded = expandedCards.has(
+                      `${dayData.date}-${cardKey}`,
+                    );
 
+                    // Se for "sem cartão", renderizar direto as transações
+                    if (isSemCartao) {
                       return (
                         <div
-                          key={transaction.id}
-                          className="flex items-center justify-between p-1.5 rounded-xl bg-secondary/30 hover:bg-secondary/90 transition-colors"
+                          key={`${dayData.date}-${cardKey}`}
+                          className="space-y-1"
                         >
-                          <div className="flex items-center gap-3">
-                            <IconBackground
-                              icon={category?.icone as keyof typeof LucideIcons}
-                              color={category?.cor}
-                              text=""
-                            />
+                          {cardData.transactions.map((transaction) => {
+                            const category = categories.find(
+                              (c) => c.id === transaction.categoria_id,
+                            );
+                            const isIncome = transaction.tipo === "Receita";
 
-                            <div>
-                              <p className="font-medium text-xs text-foreground flex items-center gap-1.5">
-                                {transaction.descricao}
-                                {transaction.fixa && (
-                                  <Repeat className="h-3 w-3 text-muted-foreground" />
-                                )}
-                              </p>
-                              <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 text-xs text-muted-foreground">
-                                {category && (
-                                  <div className="flex items-center gap-1">
-                                    <span>{category.nome}</span>
+                            return (
+                              <div
+                                key={transaction.id}
+                                className="flex items-center justify-between p-2 rounded-lg bg-secondary/30 hover:bg-secondary/60 transition-colors"
+                              >
+                                <div className="flex items-center gap-3 flex-1">
+                                  <IconBackground
+                                    icon={
+                                      category?.icone as keyof typeof LucideIcons
+                                    }
+                                    color={category?.cor}
+                                    text=""
+                                  />
+
+                                  <div className="flex-1">
+                                    <p className="font-medium text-xs text-foreground flex items-center gap-1.5">
+                                      {transaction.descricao}
+                                      {transaction.fixa && (
+                                        <Repeat className="h-3 w-3 text-muted-foreground" />
+                                      )}
+                                    </p>
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 text-xs text-muted-foreground">
+                                      {category && <span>{category.nome}</span>}
+                                      <span className="hidden sm:inline">
+                                        •
+                                      </span>
+                                      <span>
+                                        {formatDate(transaction.data)}
+                                      </span>
+                                    </div>
                                   </div>
-                                )}
-                                <span className="hidden sm:inline">•</span>
-                                <span>
-                                  {formatDate(transaction.data)}
-                                  {/* {formatDate(
-                                    obterDataExibicaoTransacao(transaction),
-                                  )} */}
-                                </span>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  {/* Value */}
+                                  <span
+                                    className={cn(
+                                      "font-semibold text-xs min-w-[80px] text-right",
+                                      isIncome ? "text-income" : "text-expense",
+                                    )}
+                                  >
+                                    {isIncome ? "+" : "-"}
+                                    {formatCurrency(transaction.valor)}
+                                  </span>
+
+                                  {/* Actions */}
+                                  <div className="flex gap-0.5">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      title={
+                                        transaction.pago ? "Estornar" : "Pagar"
+                                      }
+                                      className={`h-6 w-6 transition-colors ${
+                                        transaction.pago
+                                          ? "text-green-500 bg-green-500/10 hover:bg-green-500/20 hover:text-green-600"
+                                          : "text-gray-500 bg-gray-500/10 hover:bg-gray-500/20 hover:text-gray-600"
+                                      }`}
+                                      onClick={() => togglePago(transaction.id)}
+                                    >
+                                      <LucideIcons.CircleDollarSignIcon className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      title="Editar"
+                                      className="h-6 w-6 transition-colors text-blue-500 bg-blue-500/10 hover:bg-blue-500/20 hover:text-blue-600"
+                                      onClick={() => handleEdit(transaction)}
+                                    >
+                                      <Pencil className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      title="Deletar"
+                                      className="h-6 w-6 transition-colors text-red-500 bg-red-500/10 hover:bg-red-500/20 hover:text-red-600"
+                                      onClick={() =>
+                                        handleDeleteClick(transaction)
+                                      }
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            {/* Status badges */}
-                            <div className="flex items-center gap-1">
-                              {transaction.cartao && (
-                                <span className="flex items-center px-1.5 py-0.5 rounded text-xs text-chart-1">
-                                  <CreditCard className="h-4 w-4" />
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Value */}
-                            <span
-                              className={cn(
-                                "font-semibold text-xs min-w-[80px] text-right",
-                                isIncome ? "text-income" : "text-expense",
-                              )}
-                            >
-                              {isIncome ? "+" : "-"}
-                              {formatCurrency(transaction.valor)}
-                            </span>
-
-                            {/* Actions */}
-                            <div className="flex gap-0.5">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                title={transaction.pago ? "Estornar" : "Pagar"}
-                                className={`h-7 w-7 transition-colors ${
-                                  transaction.pago
-                                    ? "text-green-500 bg-green-500/10 hover:bg-green-500/20 hover:text-green-600"
-                                    : "text-gray-500 bg-gray-500/10 hover:bg-gray-500/20 hover:text-gray-600"
-                                }`}
-                                onClick={() => togglePago(transaction.id)}
-                              >
-                                <LucideIcons.CircleDollarSignIcon className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                title="Editar"
-                                className="h-7 w-7 transition-colors text-blue-500 bg-blue-500/10 hover:bg-blue-500/20 hover:text-blue-600"
-                                onClick={() => handleEdit(transaction)}
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                title="Deletar"
-                                className="h-7 w-7 transition-colors text-red-500 bg-red-500/10 hover:bg-red-500/20 hover:text-red-600"
-                                onClick={() => handleDeleteClick(transaction)}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          </div>
+                            );
+                          })}
                         </div>
                       );
-                    })}
-                  </div>
+                    }
+
+                    // Se for cartão com transações, renderizar com agrupador
+                    return (
+                      <div key={`${dayData.date}-${cardKey}`}>
+                        {/* Linha do cartão/total */}
+                        <button
+                          onClick={() => {
+                            const key = `${dayData.date}-${cardKey}`;
+                            const newExpanded = new Set(expandedCards);
+                            if (newExpanded.has(key)) {
+                              newExpanded.delete(key);
+                            } else {
+                              newExpanded.add(key);
+                            }
+                            setExpandedCards(newExpanded);
+                          }}
+                          className="w-full flex items-center justify-between p-3 rounded-xl bg-secondary/50 hover:bg-secondary/70 transition-colors border border-secondary/30"
+                        >
+                          <div className="flex items-center gap-3 flex-1 text-left">
+                            {cardData.transactions.length > 0 && (
+                              <ChevronDown
+                                className={`h-4 w-4 text-muted-foreground transition-transform ${
+                                  isExpanded ? "rotate-180" : ""
+                                }`}
+                              />
+                            )}
+                            <CreditCard className="h-4 w-4 text-chart-1" />
+                            <div className="flex-1">
+                              <p className="font-semibold text-sm text-foreground">
+                                {cardData.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {cardData.transactions.length} transação(ões)
+                                {dayData.date &&
+                                  ` • Vencimento: ${formatDate(dayData.date)}`}
+                              </p>
+                            </div>
+                          </div>
+                          <span
+                            className={cn(
+                              "font-semibold text-sm min-w-[100px] text-right",
+                              cardData.total >= 0
+                                ? "text-income"
+                                : "text-expense",
+                            )}
+                          >
+                            {cardData.total >= 0 ? "+" : "-"}
+                            {formatCurrency(Math.abs(cardData.total))}
+                          </span>
+                        </button>
+
+                        {/* Transações do cartão (expandível) */}
+                        {isExpanded && (
+                          <div className="space-y-1 mt-2 ml-4 pl-4 border-l border-secondary/30">
+                            {cardData.transactions.map((transaction) => {
+                              const category = categories.find(
+                                (c) => c.id === transaction.categoria_id,
+                              );
+                              const isIncome = transaction.tipo === "Receita";
+
+                              return (
+                                <div
+                                  key={transaction.id}
+                                  className="flex items-center justify-between p-2 rounded-lg bg-secondary/20 hover:bg-secondary/60 transition-colors"
+                                >
+                                  <div className="flex items-center gap-2 flex-1">
+                                    <IconBackground
+                                      icon={
+                                        category?.icone as keyof typeof LucideIcons
+                                      }
+                                      color={category?.cor}
+                                      text=""
+                                    />
+
+                                    <div className="flex-1">
+                                      <p className="font-medium text-xs text-foreground flex items-center gap-1.5">
+                                        {transaction.descricao}
+                                        {transaction.fixa && (
+                                          <Repeat className="h-3 w-3 text-muted-foreground" />
+                                        )}
+                                      </p>
+                                      <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 text-xs text-muted-foreground">
+                                        {category && (
+                                          <span>{category.nome}</span>
+                                        )}
+                                        <span className="hidden sm:inline">
+                                          •
+                                        </span>
+                                        <span>
+                                          {formatDate(transaction.data)}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-2">
+                                    {/* Value */}
+                                    <span
+                                      className={cn(
+                                        "font-semibold text-xs min-w-[80px] text-right",
+                                        isIncome
+                                          ? "text-income"
+                                          : "text-expense",
+                                      )}
+                                    >
+                                      {isIncome ? "+" : "-"}
+                                      {formatCurrency(transaction.valor)}
+                                    </span>
+
+                                    {/* Actions */}
+                                    <div className="flex gap-0.5">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        title={
+                                          transaction.pago
+                                            ? "Estornar"
+                                            : "Pagar"
+                                        }
+                                        className={`h-6 w-6 transition-colors ${
+                                          transaction.pago
+                                            ? "text-green-500 bg-green-500/10 hover:bg-green-500/20 hover:text-green-600"
+                                            : "text-gray-500 bg-gray-500/10 hover:bg-gray-500/20 hover:text-gray-600"
+                                        }`}
+                                        onClick={() =>
+                                          togglePago(transaction.id)
+                                        }
+                                      >
+                                        <LucideIcons.CircleDollarSignIcon className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        title="Editar"
+                                        className="h-6 w-6 transition-colors text-blue-500 bg-blue-500/10 hover:bg-blue-500/20 hover:text-blue-600"
+                                        onClick={() => handleEdit(transaction)}
+                                      >
+                                        <Pencil className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        title="Deletar"
+                                        className="h-6 w-6 transition-colors text-red-500 bg-red-500/10 hover:bg-red-500/20 hover:text-red-600"
+                                        onClick={() =>
+                                          handleDeleteClick(transaction)
+                                        }
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
 
                   {/* Linha de saldo projetado do dia */}
-                  <div className="mt-2 pt-2 border-t border-secondary/50 pl-12">
+                  <div className="pt-2 border-t border-secondary/30 pl-3">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">
-                        Saldo projetado em {formatDate(dayData.date)}:
+                      <span className="text-muted-foreground font-medium">
+                        Saldo projetado: {formatDate(dayData.date)}
                       </span>
                       <span
                         className={cn(
