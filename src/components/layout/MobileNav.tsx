@@ -5,15 +5,19 @@ import {
   Tag,
   Receipt,
   CreditCard,
+  User,
+  Cog,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
-  { to: "/contas", icon: Wallet, label: "Contas" },
+  // { to: "/contas", icon: Wallet, label: "Contas" },
   { to: "/lancamentos", icon: Receipt, label: "Lançamentos" },
-  { to: "/categorias", icon: Tag, label: "Categorias" },
+  // { to: "/categorias", icon: Tag, label: "Categorias" },
   { to: "/cartoes", icon: CreditCard, label: "Cartões" },
+  // { to: "/perfil", icon: CreditCard, label: "Perfil" },
+  { to: "/config", icon: Cog, label: "Configurações" },
 ];
 
 export function MobileNav() {

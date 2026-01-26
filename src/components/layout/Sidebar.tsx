@@ -7,6 +7,8 @@ import {
   CreditCard,
   TrendingUp,
   LogOut,
+  User,
+  Cog,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,9 +18,11 @@ import InstallButton from "../InstallButton";
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/contas", icon: Wallet, label: "Contas" },
+  { to: "/lancamentos", icon: Receipt, label: "Lançamentos" },
   { to: "/categorias", icon: Tag, label: "Categorias" },
   { to: "/cartoes", icon: CreditCard, label: "Cartões" },
-  { to: "/lancamentos", icon: Receipt, label: "Lançamentos" },
+  { to: "/perfil", icon: User, label: "Perfil" },
+  { to: "/configuration", icon: Cog, label: "Configurações" },
 ];
 
 export function Sidebar() {

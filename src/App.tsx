@@ -12,6 +12,9 @@ import Categories from "./pages/Categories";
 import Transactions from "./pages/Transactions";
 import CreditCards from "./pages/CreditCards";
 import Auth from "./pages/Auth";
+import Config from "./pages/Config";
+import Configuration from "./pages/Configuration";
+import Perfil from "./pages/Perfil";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -69,6 +72,36 @@ const App = () => (
                 <ProtectedRoute>
                   <FinanceProvider>
                     <CreditCards />
+                  </FinanceProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/perfil"
+              element={
+                <ProtectedRoute>
+                  <FinanceProvider>
+                    <Perfil />
+                  </FinanceProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/config"
+              element={
+                <ProtectedRoute>
+                  <FinanceProvider>
+                    <Config />
+                  </FinanceProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/configuration"
+              element={
+                <ProtectedRoute>
+                  <FinanceProvider>
+                    <Configuration />
                   </FinanceProvider>
                 </ProtectedRoute>
               }

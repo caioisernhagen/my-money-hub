@@ -279,7 +279,8 @@ export default function Accounts() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8"
+                      title="Editar"
+                      className="h-8 w-8 transition-colors text-blue-500 bg-blue-500/10 hover:bg-blue-500/20 hover:text-blue-600"
                       onClick={() => handleEdit(account)}
                     >
                       <Pencil className="h-4 w-4" />
@@ -287,7 +288,8 @@ export default function Accounts() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      title="Deletar"
+                      className="h-8 w-8 ml-2 transition-colors text-red-500 bg-red-500/10 hover:bg-red-500/20 hover:text-red-600"
                       onClick={() => handleDelete(account)}
                     >
                       <Trash2 className="h-4 w-4" />

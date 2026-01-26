@@ -6,6 +6,8 @@ import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+
 import { NewTransactionDialog } from "@/components/NewTransactionDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
@@ -43,6 +45,8 @@ import {
   Repeat,
   ChevronDown,
   Globe,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { IconBackground } from "@/components/IconBackground";
@@ -90,9 +94,7 @@ export default function Transactions() {
 
   const [filters, setFilters] = useState<TransactionFilters>({});
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState<
-    "data-za" | "data-az" | "descricao-az" | "descricao-za"
-  >("data-az");
+  const [isDescending, setIsDescending] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
 
@@ -205,29 +207,19 @@ export default function Transactions() {
       );
     }
 
-    // Aplicar ordenação
-    if (sortBy === "descricao-az") {
-      transactions = transactions.sort((a, b) =>
-        a.descricao.localeCompare(b.descricao),
-      );
-    } else if (sortBy === "descricao-za") {
-      transactions = transactions.sort((a, b) =>
-        b.descricao.localeCompare(a.descricao),
-      );
-    } else if (sortBy === "data-za") {
-      // Por data (ascendente - do menor para maior)
-      transactions = transactions.sort(
-        (a, b) => new Date(b.data).getTime() - new Date(a.data).getTime(),
-      );
-    } else if (sortBy === "data-az") {
-      // Por data (descendente - do maior para menor)
+    // Aplicar ordenação por data (ASC = antiga para nova, DESC = nova para antiga)
+    if (isDescending) {
       transactions = transactions.sort(
         (a, b) => new Date(a.data).getTime() - new Date(b.data).getTime(),
+      );
+    } else {
+      transactions = transactions.sort(
+        (a, b) => new Date(b.data).getTime() - new Date(a.data).getTime(),
       );
     }
 
     return transactions;
-  }, [filterTransactions, filters, selectedDate, searchTerm, sortBy]);
+  }, [filterTransactions, filters, selectedDate, searchTerm, isDescending]);
 
   // Totais
   const totals = useMemo(() => {
@@ -377,13 +369,18 @@ export default function Transactions() {
   };
 
   const clearFilters = () => {
+    setSearchTerm("");
     setFilters({});
   };
 
-  const hasActiveFilters = Object.entries(filters).some(
-    ([key, v]) =>
-      key !== "dataInicio" && key !== "dataFim" && v !== undefined && v !== "",
-  );
+  const hasActiveFilters =
+    Object.entries(filters).some(
+      ([key, v]) =>
+        key !== "dataInicio" &&
+        key !== "dataFim" &&
+        v !== undefined &&
+        v !== "",
+    ) || searchTerm.trim() !== "";
 
   // Agrupar transações por data e cartão
   const transactionsByDate = useMemo(() => {
@@ -443,7 +440,7 @@ export default function Transactions() {
 
     // Ordenar datas
     const sortedDates = Object.keys(grouped).sort((a, b) => {
-      if (sortBy === "data-za") {
+      if (isDescending) {
         return new Date(b).getTime() - new Date(a).getTime();
       } else {
         return new Date(a).getTime() - new Date(b).getTime();
@@ -489,7 +486,7 @@ export default function Transactions() {
     });
 
     return result;
-  }, [filteredTransactions, accounts, sortBy, creditCards]);
+  }, [filteredTransactions, accounts, isDescending, creditCards]);
 
   if (loading) {
     return (
@@ -532,7 +529,7 @@ export default function Transactions() {
                 className="fixed bottom-20 right-6 h-14 w-14 rounded-full bg-primary text-white shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center justify-center z-50"
                 title="Novo lançamento"
               >
-                <Plus className="h-6 w-6" />
+                <Plus className="h-8 w-8" />
               </button>
             }
             showTrigger={false}
@@ -580,27 +577,35 @@ export default function Transactions() {
 
         <div className="flex flex-col gap-3 mb-4">
           {/* Top Bar - Busca, Ordenação e Filtros */}
-          <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center sm:justify-between">
-            {/* Botão Filtros */}
-            <Button
-              variant="outline"
-              //variant={hasActiveFilters ? "ghost" : "outline"}
-              size="sm"
-              onClick={() => setShowFilters(!showFilters)}
-              className={`gap-2 stat-card ${hasActiveFilters ? "text-expense" : ""}`}
-            >
-              <ChevronDown
-                className={`h-4 w-4 transition-transform ${
-                  showFilters ? "rotate-180" : ""
-                }`}
-              />
-              Filtros
-              {/* {hasActiveFilters && (
-                <span className="ml-1 h-4 w-4 rounded-full bg-primary-foreground text-primary text-xs flex items-center justify-center">
-                  !
-                </span>
-              )} */}
-            </Button>
+          <div className="flex flex-col sm:flex-row gap-2 items-baseline">
+            <div className="flex gap-2 items-center">
+              {/* Botão Filtros */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+                className={`gap-2 stat-card ${hasActiveFilters ? "text-expense" : ""}`}
+              >
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${
+                    showFilters ? "rotate-180" : ""
+                  }`}
+                />
+                Filtros
+              </Button>
+              {/* Botão Limpar */}
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={clearFilters}
+                  className="h-8 w-8 bg-red-500 text-white rounded-full hover:bg-red-600 hover:text-white transition-colors flex items-center justify-center"
+                  title="Limpar filtros e busca"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
 
             {/* Floating Action Button para novo lançamento moved to headerActions */}
           </div>
@@ -608,46 +613,6 @@ export default function Transactions() {
           {/* Filtros Expansíveis */}
           {showFilters && (
             <div className="stat-card grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-2 p-3 rounded-lg bg-secondary/30 border border-secondary/50">
-              {/* Busca com botão interno */}
-              <div className="relative w-full sm:flex-1">
-                <Label className="text-xs mb-1 block">
-                  Busca por descrição
-                </Label>
-                <Input
-                  // placeholder="Buscar por descrição"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="h-8 text-xs"
-                />
-                {searchTerm && (
-                  <button
-                    onClick={() => setSearchTerm("")}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    title="Limpar busca"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-
-              {/* Ordenação */}
-              <div className="relative w-full sm:flex-1">
-                <Label className="text-xs mb-1 block">Ordenação</Label>
-                <Select
-                  value={sortBy}
-                  onValueChange={(value: any) => setSortBy(value)}
-                >
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="data-az">▲ Data</SelectItem>
-                    <SelectItem value="data-za">▼ Data</SelectItem>
-                    <SelectItem value="descricao-az">▲ Descrição</SelectItem>
-                    <SelectItem value="descricao-za">▼ Descrição</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
               {/* Conta */}
               <div>
                 <Label className="text-xs mb-1 block">Conta</Label>
@@ -814,7 +779,7 @@ export default function Transactions() {
               </div>
 
               {/* Cartão */}
-              <div>
+              {/* <div>
                 <Label className="text-xs mb-1 block">Cartão</Label>
                 <Select
                   value={filters.cartao_id || "all" || "noCard"}
@@ -854,22 +819,28 @@ export default function Transactions() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-
-              {/* Botão Limpar */}
-              {hasActiveFilters && (
-                <div className="flex items-end">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearFilters}
-                    className="w-full text-xs"
+              </div> */}
+              {/* Busca com botão interno */}
+              <div className="relative w-full sm:flex-2">
+                <Label className="text-xs mb-1 block">
+                  Busca por descrição
+                </Label>
+                <Input
+                  // placeholder="Buscar por descrição"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-8 text-xs"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm("")}
+                    className="absolute right-4 top-9 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    title="Limpar busca"
                   >
-                    <X className="h-3.5 w-3.5 mr-1" />
-                    Limpar
-                  </Button>
-                </div>
-              )}
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -887,8 +858,21 @@ export default function Transactions() {
           </div>
         ) : (
           <div className="stat-card">
-            <div className="text-xs text-muted-foreground mb-3">
-              {filteredTransactions.length} lançamento(s)
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <div className="text-xs text-muted-foreground">
+                {filteredTransactions.length} lançamento(s) encontrado(s)
+              </div>
+              <div className="flex items-center gap-2">
+                {/* <span className="text-xs text-muted-foreground">Data</span> */}
+                <Switch
+                  id="sort-order"
+                  title="Data"
+                  checked={isDescending}
+                  onCheckedChange={setIsDescending}
+                  iconTrue={<ArrowUp className="h-4 w-4 text-blue-600" />}
+                  iconFalse={<ArrowDown className="h-4 w-4 text-blue-600" />}
+                />
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -932,17 +916,17 @@ export default function Transactions() {
                                     <p className="font-medium text-xs text-foreground flex items-center gap-1.5">
                                       {transaction.descricao}
                                       {transaction.fixa && (
-                                        <Repeat className="h-3 w-3 text-muted-foreground" />
+                                        <Repeat className="h-5 w-5 text-muted-foreground" />
                                       )}
                                     </p>
                                     <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 text-xs text-muted-foreground">
                                       {category && <span>{category.nome}</span>}
-                                      <span className="hidden sm:inline">
+                                      {/* <span className="hidden sm:inline">
                                         •
                                       </span>
                                       <span>
                                         {formatDate(transaction.data)}
-                                      </span>
+                                      </span> */}
                                     </div>
                                   </div>
                                 </div>
@@ -967,34 +951,34 @@ export default function Transactions() {
                                       title={
                                         transaction.pago ? "Estornar" : "Pagar"
                                       }
-                                      className={`h-6 w-6 transition-colors ${
+                                      className={`h-8 w-8 transition-colors ${
                                         transaction.pago
                                           ? "text-green-500 bg-green-500/10 hover:bg-green-500/20 hover:text-green-600"
                                           : "text-gray-500 bg-gray-500/10 hover:bg-gray-500/20 hover:text-gray-600"
                                       }`}
                                       onClick={() => togglePago(transaction.id)}
                                     >
-                                      <LucideIcons.CircleDollarSignIcon className="h-3 w-3" />
+                                      <LucideIcons.CircleDollarSignIcon className="h-4 w-4" />
                                     </Button>
                                     <Button
                                       variant="ghost"
                                       size="icon"
                                       title="Editar"
-                                      className="h-6 w-6 transition-colors text-blue-500 bg-blue-500/10 hover:bg-blue-500/20 hover:text-blue-600"
+                                      className="h-8 w-8 ml-2 transition-colors text-blue-500 bg-blue-500/10 hover:bg-blue-500/20 hover:text-blue-600"
                                       onClick={() => handleEdit(transaction)}
                                     >
-                                      <Pencil className="h-3 w-3" />
+                                      <Pencil className="h-4 w-4" />
                                     </Button>
                                     <Button
                                       variant="ghost"
                                       size="icon"
                                       title="Deletar"
-                                      className="h-6 w-6 transition-colors text-red-500 bg-red-500/10 hover:bg-red-500/20 hover:text-red-600"
+                                      className="h-8 w-8 ml-2 transition-colors text-red-500 bg-red-500/10 hover:bg-red-500/20 hover:text-red-600"
                                       onClick={() =>
                                         handleDeleteClick(transaction)
                                       }
                                     >
-                                      <Trash2 className="h-3 w-3" />
+                                      <Trash2 className="h-4 w-4" />
                                     </Button>
                                   </div>
                                 </div>
@@ -1020,7 +1004,8 @@ export default function Transactions() {
                             }
                             setExpandedCards(newExpanded);
                           }}
-                          className="w-full flex items-center justify-between p-3 rounded-xl bg-secondary/50 hover:bg-secondary/70 transition-colors border border-secondary/30"
+                          // className="w-full flex items-center justify-between p-2 rounded-xl bg-secondary/50 hover:bg-secondary/70 transition-colors border border-secondary/30"
+                          className="w-full flex items-center justify-between p-2 rounded-lg bg-secondary/30 hover:bg-secondary/60 transition-colors"
                         >
                           <div className="flex items-center gap-3 flex-1 text-left">
                             {cardData.transactions.length > 0 && (
@@ -1035,10 +1020,12 @@ export default function Transactions() {
                               <p className="font-semibold text-sm text-foreground">
                                 {cardData.name}
                               </p>
-                              <p className="text-xs text-muted-foreground">
-                                {cardData.transactions.length} transação(ões)
-                                {dayData.date &&
-                                  ` • Vencimento: ${formatDate(dayData.date)}`}
+                              <p className="flex flex-col sm:flex-row sm:items-center gap-1.5 text-xs text-muted-foreground">
+                                <span>
+                                  {cardData.transactions.length} transação(ões)
+                                </span>
+                                {/* <span className="hidden sm:inline"> •</span>
+                                <span> {formatDate(dayData.date)}</span> */}
                               </p>
                             </div>
                           </div>
@@ -1082,19 +1069,19 @@ export default function Transactions() {
                                       <p className="font-medium text-xs text-foreground flex items-center gap-1.5">
                                         {transaction.descricao}
                                         {transaction.fixa && (
-                                          <Repeat className="h-3 w-3 text-muted-foreground" />
+                                          <Repeat className="h-5 w-5 text-muted-foreground" />
                                         )}
                                       </p>
                                       <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 text-xs text-muted-foreground">
                                         {category && (
                                           <span>{category.nome}</span>
                                         )}
-                                        <span className="hidden sm:inline">
+                                        {/* <span className="hidden sm:inline">
                                           •
                                         </span>
                                         <span>
                                           {formatDate(transaction.data)}
-                                        </span>
+                                        </span> */}
                                       </div>
                                     </div>
                                   </div>
@@ -1123,7 +1110,7 @@ export default function Transactions() {
                                             ? "Estornar"
                                             : "Pagar"
                                         }
-                                        className={`h-6 w-6 transition-colors ${
+                                        className={`h-8 w-8 transition-colors ${
                                           transaction.pago
                                             ? "text-green-500 bg-green-500/10 hover:bg-green-500/20 hover:text-green-600"
                                             : "text-gray-500 bg-gray-500/10 hover:bg-gray-500/20 hover:text-gray-600"
@@ -1132,27 +1119,27 @@ export default function Transactions() {
                                           togglePago(transaction.id)
                                         }
                                       >
-                                        <LucideIcons.CircleDollarSignIcon className="h-3 w-3" />
+                                        <LucideIcons.CircleDollarSignIcon className="h-4 w-4" />
                                       </Button>
                                       <Button
                                         variant="ghost"
                                         size="icon"
                                         title="Editar"
-                                        className="h-6 w-6 transition-colors text-blue-500 bg-blue-500/10 hover:bg-blue-500/20 hover:text-blue-600"
+                                        className="h-8 w-8 ml-2 transition-colors text-blue-500 bg-blue-500/10 hover:bg-blue-500/20 hover:text-blue-600"
                                         onClick={() => handleEdit(transaction)}
                                       >
-                                        <Pencil className="h-3 w-3" />
+                                        <Pencil className="h-4 w-4" />
                                       </Button>
                                       <Button
                                         variant="ghost"
                                         size="icon"
                                         title="Deletar"
-                                        className="h-6 w-6 transition-colors text-red-500 bg-red-500/10 hover:bg-red-500/20 hover:text-red-600"
+                                        className="h-8 w-8 ml-2 transition-colors text-red-500 bg-red-500/10 hover:bg-red-500/20 hover:text-red-600"
                                         onClick={() =>
                                           handleDeleteClick(transaction)
                                         }
                                       >
-                                        <Trash2 className="h-3 w-3" />
+                                        <Trash2 className="h-4 w-4" />
                                       </Button>
                                     </div>
                                   </div>
