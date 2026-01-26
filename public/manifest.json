@@ -10,13 +10,13 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "./favicon.png",
+      "src": "./public/favicon.png",
       "sizes": "52x52",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./favicon.png",
+      "src": "./public/favicon.png",
       "sizes": "52x52",
       "type": "image/png",
       "purpose": "maskable"
@@ -24,7 +24,7 @@
   ],
   "screenshots": [
     {
-      "src": "./favicon.png",
+      "src": "./public/favicon.png",
       "sizes": "540x720",
       "form_factor": "narrow"
     }
