@@ -1,28 +1,17 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/my-money-hub/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Money Hub</title>
+    <title>Controle Financeiro</title>
     <script>
-      // GitHub Pages SPA redirect
-      // This script redirects 404 errors to index.html with the original path
-      const pathSegments = window.location.pathname.split("/").filter((p) => p);
-
-      // Check if the last segment looks like a route (no extension)
-      if (
-        pathSegments.length > 0 &&
-        !pathSegments[pathSegments.length - 1].includes(".")
-      ) {
-        // Store the original path
-        sessionStorage.redirect = window.location.pathname;
-        // Redirect to index.html
-        window.location.href = "/my-money-hub/";
-      }
+      // GitHub Pages SPA routing fix
+      // Store the original path and redirect to index.html
+      const path = window.location.pathname;
+      sessionStorage.redirect = path;
+      // Redirect to the root with the original path stored
+      window.location.replace("/my-money-hub/");
     </script>
   </head>
-  <body>
-    <div id="root"></div>
-  </body>
+  <body></body>
 </html>
