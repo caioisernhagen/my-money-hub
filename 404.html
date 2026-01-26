@@ -7,13 +7,18 @@
       // SPA github pages workaround
       // https://github.com/rafgraph/spa-github-pages
       const l = window.location;
+      // Remove /my-money-hub from the pathname to avoid duplication
+      let pathname = l.pathname.slice(1).replace(/&/g, "~and~");
+      if (pathname.startsWith("my-money-hub/")) {
+        pathname = pathname.slice("my-money-hub/".length);
+      }
       l.replace(
         l.protocol +
           "//" +
           l.hostname +
           (l.port ? ":" + l.port : "") +
           "/my-money-hub/?/" +
-          l.pathname.slice(1).replace(/&/g, "~and~") +
+          pathname +
           (l.search ? "&" + l.search.slice(1).replace(/&/g, "~and~") : "") +
           l.hash,
       );
