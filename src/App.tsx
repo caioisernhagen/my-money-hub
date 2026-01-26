@@ -23,7 +23,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
-        <BrowserRouter basename={import.meta.env.DEV ? "/" : "/my-money-hub"}>
+        <BrowserRouter basename={import.meta.env.DEV ? "/" : "/my-money-hub/"}>
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route
