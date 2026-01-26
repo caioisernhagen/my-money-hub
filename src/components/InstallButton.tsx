@@ -1,35 +1,80 @@
 import { useEffect, useState } from "react";
+import { Download } from "lucide-react";
+import { Button } from "./ui/button";
 
-let deferredPrompt;
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
+let deferredPrompt: BeforeInstallPromptEvent | null = null;
 
 export default function InstallButton() {
-  const [show, setShow] = useState(false);
+  const [showInstall, setShowInstall] = useState(false);
+  const [isInstalling, setIsInstalling] = useState(false);
 
   useEffect(() => {
-    const handler = (e) => {
-      e.preventDefault(); // impede popup automático
-      deferredPrompt = e;
-      setShow(true); // mostra botão
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      deferredPrompt = e as BeforeInstallPromptEvent;
+      console.log("✓ beforeinstallprompt capturado");
+      setShowInstall(true);
     };
 
-    window.addEventListener("beforeinstallprompt", handler);
+    const handleAppInstalled = () => {
+      console.log("✓ App instalado com sucesso!");
+      deferredPrompt = null;
+      setShowInstall(false);
+    };
 
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleAppInstalled);
+
+    return () => {
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handleBeforeInstallPrompt,
+      );
+      window.removeEventListener("appinstalled", handleAppInstalled);
+    };
   }, []);
 
-  const installApp = async () => {
-    if (!deferredPrompt) return;
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) {
+      console.error("✗ Prompt de instalação não disponível");
+      return;
+    }
 
-    deferredPrompt.prompt(); // abre o popup nativo
-    const result = await deferredPrompt.userChoice;
+    setIsInstalling(true);
 
-    console.log("Resultado:", result.outcome);
+    try {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`✓ Instalação: ${outcome}`);
 
-    deferredPrompt = null;
-    setShow(false);
+      if (outcome === "accepted") {
+        deferredPrompt = null;
+        setShowInstall(false);
+      }
+    } catch (error) {
+      console.error("✗ Erro durante instalação:", error);
+    } finally {
+      setIsInstalling(false);
+    }
   };
 
-  if (!show) return null;
+  if (!showInstall) return null;
 
-  return <button onClick={installApp}>Instalar aplicativo</button>;
+  return (
+    <Button
+      onClick={handleInstallClick}
+      disabled={isInstalling}
+      variant="default"
+      size="sm"
+      className="gap-2"
+    >
+      <Download className="h-4 w-4" />
+      {isInstalling ? "Instalando..." : "Instalar App"}
+    </Button>
+  );
 }

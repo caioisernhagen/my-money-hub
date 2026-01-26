@@ -1,5 +1,5 @@
 const CACHE_NAME = "app-cache-v1";
-const URLS_TO_CACHE = ["/", "/index.html", "/manifest.json"];
+const URLS_TO_CACHE = ["./", "./index.html", "./manifest.json"];
 
 // Instala e salva arquivos no cache
 self.addEventListener("install", (event) => {
