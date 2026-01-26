@@ -1,16 +1,22 @@
 <!doctype html>
-<html lang="pt-BR">
+<html>
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Controle Financeiro</title>
+    <meta charset="utf-8" />
+    <title>Redirecionando...</title>
     <script>
-      // GitHub Pages SPA routing fix
-      // Store the original path and redirect to index.html
-      const path = window.location.pathname;
-      sessionStorage.redirect = path;
-      // Redirect to the root with the original path stored
-      window.location.replace("/my-money-hub/");
+      // SPA github pages workaround
+      // https://github.com/rafgraph/spa-github-pages
+      const l = window.location;
+      l.replace(
+        l.protocol +
+          "//" +
+          l.hostname +
+          (l.port ? ":" + l.port : "") +
+          "/my-money-hub/?/" +
+          l.pathname.slice(1).replace(/&/g, "~and~") +
+          (l.search ? "&" + l.search.slice(1).replace(/&/g, "~and~") : "") +
+          l.hash,
+      );
     </script>
   </head>
   <body></body>

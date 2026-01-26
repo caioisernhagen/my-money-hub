@@ -35,12 +35,21 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      // GitHub Pages SPA routing fix
-      // Restore the original path after 404 redirect
-      if (sessionStorage.redirect) {
+      // SPA github pages workaround redirect processing
+      // https://github.com/rafgraph/spa-github-pages
+      (function () {
         const redirect = sessionStorage.redirect;
         delete sessionStorage.redirect;
-        window.history.replaceState(null, null, redirect);
+        if (redirect && redirect !== location.href) {
+          history.replaceState(null, null, redirect);
+        }
+      })();
+
+      // GitHub Pages SPA routing fix - alternative method
+      const u = new URLSearchParams(window.location.search);
+      const r = u.get("redirect");
+      if (r && r !== decodeURIComponent(window.location.pathname)) {
+        window.history.replaceState(null, null, decodeURIComponent(r));
       }
 
       if ("serviceWorker" in navigator) {
