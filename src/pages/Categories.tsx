@@ -132,21 +132,21 @@ export default function Categories() {
   }
 
   return (
-    <MainLayout title="Categorias" subtitle="Organize suas receitas e despesas">
-      <div className="flex justify-end mb-5">
+    <MainLayout
+      title="Categorias"
+      subtitle="Organize suas receitas e despesas"
+      headerActions={
+        <Button
+          onClick={() => setIsOpen(true)}
+          className="fixed bottom-20 right-6 h-14 w-14 rounded-full bg-primary text-white shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center justify-center z-50"
+          title="Nova Categoria"
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
+      }
+    >
+      <div>
         <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-          <DialogTrigger asChild>
-            <Button
-              className="fixed bottom-20 right-6 h-14 w-14 rounded-full bg-primary text-white shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center justify-center"
-              title="Nova Categoria"
-            >
-              <Plus className="h-6 w-6" />
-            </Button>
-            {/* <Button size="sm" className="gap-2">
-              <Plus className="h-4 w-4" />
-              Nova Categoria
-            </Button> */}
-          </DialogTrigger>
           <DialogContent className="sm:max-w-[400px]">
             <DialogHeader>
               <DialogTitle className="font-medium">

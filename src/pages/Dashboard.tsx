@@ -74,10 +74,33 @@ export default function Dashboard() {
       title="Dashboard"
       subtitle={`Visão geral de ${monthName} de ${year}`}
       headerActions={
-        <MonthSelector
-          selectedDate={selectedDate}
-          onDateChange={setSelectedDate}
-        />
+        <>
+          <MonthSelector
+            selectedDate={selectedDate}
+            onDateChange={setSelectedDate}
+          />
+
+          <NewTransactionDialog
+            isOpen={isDialogOpen}
+            onOpenChange={setIsDialogOpen}
+            onSubmit={async (data) => {
+              const result = await addTransaction(data);
+              return !!result;
+            }}
+            categories={categories}
+            accounts={accounts}
+            creditCards={creditCards}
+            trigger={
+              <button
+                className="fixed bottom-20 right-6 h-14 w-14 rounded-full bg-primary text-white shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center justify-center z-50"
+                title="Novo lançamento"
+              >
+                <Plus className="h-6 w-6" />
+              </button>
+            }
+            showTrigger={false}
+          />
+        </>
       }
     >
       {/* Stats Grid */}
@@ -132,27 +155,7 @@ export default function Dashboard() {
       {/* Bottom Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-20 lg:pb-0"></div>
 
-      {/* Floating Action Button para novo lançamento */}
-      <NewTransactionDialog
-        isOpen={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        onSubmit={async (data) => {
-          const result = await addTransaction(data);
-          return !!result;
-        }}
-        categories={categories}
-        accounts={accounts}
-        creditCards={creditCards}
-        trigger={
-          <button
-            className="fixed bottom-20 right-6 h-14 w-14 rounded-full bg-primary text-white shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center justify-center"
-            title="Novo lançamento"
-          >
-            <Plus className="h-6 w-6" />
-          </button>
-        }
-        showTrigger={false}
-      />
+      {/* Floating Action Button para novo lançamento moved to headerActions */}
     </MainLayout>
   );
 }

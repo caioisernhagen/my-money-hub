@@ -511,10 +511,33 @@ export default function Transactions() {
       title="Lançamentos"
       subtitle="Gerencie suas transações"
       headerActions={
-        <MonthSelector
-          selectedDate={selectedDate}
-          onDateChange={setSelectedDate}
-        />
+        <>
+          <MonthSelector
+            selectedDate={selectedDate}
+            onDateChange={setSelectedDate}
+          />
+
+          <NewTransactionDialog
+            isOpen={isOpen}
+            onOpenChange={setIsOpen}
+            onSubmit={async (data) => {
+              const result = await addTransaction(data);
+              return !!result;
+            }}
+            categories={categories}
+            accounts={accounts}
+            creditCards={creditCards}
+            trigger={
+              <button
+                className="fixed bottom-20 right-6 h-14 w-14 rounded-full bg-primary text-white shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center justify-center z-50"
+                title="Novo lançamento"
+              >
+                <Plus className="h-6 w-6" />
+              </button>
+            }
+            showTrigger={false}
+          />
+        </>
       }
     >
       <div className="pb-20 lg:pb-0">
@@ -579,27 +602,7 @@ export default function Transactions() {
               )} */}
             </Button>
 
-            {/* Floating Action Button para novo lançamento */}
-            <NewTransactionDialog
-              isOpen={isOpen}
-              onOpenChange={setIsOpen}
-              onSubmit={async (data) => {
-                const result = await addTransaction(data);
-                return !!result;
-              }}
-              categories={categories}
-              accounts={accounts}
-              creditCards={creditCards}
-              trigger={
-                <button
-                  className="fixed bottom-20 right-6 h-14 w-14 rounded-full bg-primary text-white shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center justify-center"
-                  title="Novo lançamento"
-                >
-                  <Plus className="h-6 w-6" />
-                </button>
-              }
-              showTrigger={false}
-            />
+            {/* Floating Action Button para novo lançamento moved to headerActions */}
           </div>
 
           {/* Filtros Expansíveis */}

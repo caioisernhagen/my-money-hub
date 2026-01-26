@@ -174,21 +174,21 @@ export default function CreditCards() {
   }
 
   return (
-    <MainLayout title="Cartões" subtitle="Gerencie seus cartões de crédito">
-      <div className="flex justify-end mb-5">
+    <MainLayout
+      title="Cartões"
+      subtitle="Gerencie seus cartões de crédito"
+      headerActions={
+        <Button
+          onClick={() => setIsOpen(true)}
+          className="fixed bottom-20 right-6 h-14 w-14 rounded-full bg-primary text-white shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center justify-center z-50"
+          title="Nova Categoria"
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
+      }
+    >
+      <div>
         <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-          <DialogTrigger asChild>
-            <Button
-              className="fixed bottom-20 right-6 h-14 w-14 rounded-full bg-primary text-white shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center justify-center"
-              title="Novo Cartão"
-            >
-              <Plus className="h-6 w-6" />
-            </Button>
-            {/* <Button size="sm" className="gap-2">
-              <Plus className="h-4 w-4" />
-              Novo Cartão
-            </Button> */}
-          </DialogTrigger>
           <DialogContent className="sm:max-w-[380px]">
             <DialogHeader>
               <DialogTitle className="font-medium">
