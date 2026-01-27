@@ -54,16 +54,18 @@ self.addEventListener("fetch", (event) => {
   // Para APIs (supabase), usar network-first
   if (url.hostname.includes("supabase")) {
     event.respondWith(
-      fetch(event.request).then((response) => {
-        if (response.ok) {
-          // Clona ANTES de retornar
-          const responseToCache = response.clone();
-          caches.open(DYNAMIC_CACHE).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-        }
-        return response;
-      }).catch(() => caches.match(event.request)),
+      fetch(event.request)
+        .then((response) => {
+          if (response.ok) {
+            // Clona ANTES de retornar
+            const responseToCache = response.clone();
+            caches.open(DYNAMIC_CACHE).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request)),
     );
     return;
   }
@@ -71,16 +73,18 @@ self.addEventListener("fetch", (event) => {
   // Para arquivos de assets com hash (vite), usar network-first
   if (url.pathname.includes("/assets/")) {
     event.respondWith(
-      fetch(event.request).then((response) => {
-        if (response.ok) {
-          // Clona ANTES de retornar
-          const responseToCache = response.clone();
-          caches.open(DYNAMIC_CACHE).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-        }
-        return response;
-      }).catch(() => caches.match(event.request)),
+      fetch(event.request)
+        .then((response) => {
+          if (response.ok) {
+            // Clona ANTES de retornar
+            const responseToCache = response.clone();
+            caches.open(DYNAMIC_CACHE).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request)),
     );
     return;
   }
