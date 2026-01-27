@@ -55,7 +55,6 @@ import {
   TransactionType,
   TransactionFilters,
 } from "@/types/finance";
-//import { obterDataExibicaoComMapa } from "@/lib/creditCardHelpers";
 import { toast } from "sonner";
 import {
   format,
@@ -102,11 +101,19 @@ export default function Transactions() {
   useEffect(() => {
     const tipo = searchParams.get("tipo");
     const mes = searchParams.get("mes");
+    const status = searchParams.get("status");
 
     if (tipo && (tipo === "receita" || tipo === "despesa")) {
       setFilters((prev) => ({
         ...prev,
         tipo: tipo === "receita" ? "Receita" : "Despesa",
+      }));
+    }
+    if (status && (status === "pendente" || status === "pago")) {
+      console.log("Ajustando status para:", status);
+      setFilters((prev) => ({
+        ...prev,
+        pago: status === "pendente" ? false : true,
       }));
     }
 

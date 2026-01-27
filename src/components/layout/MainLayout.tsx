@@ -16,7 +16,7 @@ export function MainLayout({
   headerActions,
 }: MainLayoutProps) {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen min-w-96 bg-background">
       {/* Desktop Sidebar */}
       <div className="hidden lg:block">
         <Sidebar />

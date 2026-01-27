@@ -31,10 +31,12 @@ export function StatCard({
     if (variant === "income" && title !== "Saldo Mensal") {
       const mesAno = selectedDate ? format(selectedDate, "yyyy-MM") : "";
       navigate(`/lancamentos?tipo=receita&mes=${mesAno}`);
-    }
-    if (variant === "expense" && title !== "Saldo Mensal") {
+    } else if (variant === "expense" && title !== "Saldo Mensal") {
       const mesAno = selectedDate ? format(selectedDate, "yyyy-MM") : "";
       navigate(`/lancamentos?tipo=despesa&mes=${mesAno}`);
+    } else if (variant === "pending") {
+      const mesAno = selectedDate ? format(selectedDate, "yyyy-MM") : "";
+      navigate(`/lancamentos?status=pendente&mes=${mesAno}`);
     }
   }
 
@@ -43,10 +45,10 @@ export function StatCard({
       onClick={handleClick}
       className={cn(
         "stat-card",
-        variant === "income" && "!bg-income-muted",
-        variant === "expense" && "!bg-expense-muted",
-        variant === "pending" && "!bg-pending-muted",
-        variant === "default" && "!text-foreground",
+        // variant === "income" && "!bg-income-muted",
+        // variant === "expense" && "!bg-expense-muted",
+        // variant === "pending" && "!bg-pending-muted",
+        // variant === "default" && "!text-foreground",
       )}
     >
       <div className="flex items-start justify-between ">

@@ -106,28 +106,28 @@ export default function Dashboard() {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <StatCard
-          title="Receitas"
+          title="Você recebeu"
           value={formatCurrency(stats.receitas)}
           icon={TrendingUp}
           variant="income"
           selectedDate={selectedDate}
         />
         <StatCard
-          title="Despesas"
+          title="Você gastou"
           value={formatCurrency(stats.despesas)}
           icon={TrendingDown}
           variant="expense"
           selectedDate={selectedDate}
         />
         <StatCard
-          title="Saldo Mensal"
+          title="Resultado do mês"
           value={formatCurrency(stats.saldo)}
           icon={Wallet}
           variant={stats.saldo >= 0 ? "income" : "expense"}
           selectedDate={selectedDate}
         />
         <StatCard
-          title="Pendentes"
+          title="Contas a pagar/receber"
           value={formatCurrency(stats.pendentes)}
           icon={Receipt}
           variant="pending"

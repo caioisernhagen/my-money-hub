@@ -15,7 +15,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 220 30% 10%;
 
-    --primary: 220 80% 55%;
+    --primary: 221, 83%, 53%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 15% 94%;
@@ -32,24 +32,32 @@
 
     --border: 220 15% 90%;
     --input: 220 15% 90%;
-    --ring: 220 80% 55%;
+    --ring: 221, 83%, 53%;
 
     --radius: 1rem;
 
     /* Finance specific tokens */
-    --income: 160 70% 40%;
+    /* --income: 160 70% 40%;
     --income-foreground: 0 0% 100%;
-    --income-muted: 160 55% 90%;
+    --income-muted: 160 55% 90%; */
 
-    --expense: 0 75% 55%;
+    --income: 142, 76%, 36%;
+    --income-foreground: 0 0% 100%;
+    --income-muted: 141, 84%, 93%;
+
+    /* --expense: 0 75% 55%;
     --expense-foreground: 0 0% 100%;
-    --expense-muted: 0 55% 90%;
+    --expense-muted: 0 55% 90%; */
 
-    --pending: 60, 20%, 20%;
+    --expense: 0, 72%, 51%;
+    --expense-foreground: 0 0% 100%;
+    --expense-muted: 0, 93%, 94%;
+
+    --pending: 32, 95%, 44%;
     --pending-foreground: 0 0% 100%;
-    --pending-muted: 50 80% 80%;
+    --pending-muted: 48, 96%, 89%;
 
-    --chart-1: 220 80% 55%;
+    --chart-1: 221, 83%, 53%;
     --chart-2: 160 70% 40%;
     --chart-3: 0 75% 55%;
     --chart-4: 35 95% 50%;
@@ -58,12 +66,12 @@
 
     --sidebar-background: 220 30% 8%;
     --sidebar-foreground: 220 10% 95%;
-    --sidebar-primary: 220 80% 55%;
+    --sidebar-primary: 221, 83%, 53%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 25% 15%;
     --sidebar-accent-foreground: 220 10% 95%;
     --sidebar-border: 220 25% 15%;
-    --sidebar-ring: 220 80% 55%;
+    --sidebar-ring: 221, 83%, 53%;
   }
 
   .dark {
