@@ -63,12 +63,15 @@ export default function InstallButton() {
   // Renderização para iOS (Instrução manual)
   if (isIOS) {
     return (
-      <div className="flex flex-col items-center gap-2 p-4 border rounded-lg bg-muted/50">
-        <p className="text-sm text-center">Para instalar no seu iPhone:</p>
-        <div className="flex items-center gap-2 text-sm font-medium">
-          Clique em <Share className="h-4 w-4" /> e depois em
-          <span className="underline">"Adicionar à Tela de Início"</span>
-        </div>
+      <div className="items-center gap-2 p-4 border rounded-lg bg-muted/50">
+        <p className="text-sm text-center mb-4 underline">
+          Para instalar no seu iPhone:
+        </p>
+        <p className="text-sm text-center display-flex align-center justify-center gap-2">
+          Clique nos três pontos e/ou no botão de compartilhamento e depois em
+          "Adicionar à Tela de Início"
+          {/* <Share className="h-4 w-4 display-flex" /> */}
+        </p>
       </div>
     );
   }

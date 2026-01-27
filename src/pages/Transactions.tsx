@@ -278,76 +278,9 @@ export default function Transactions() {
     return options;
   }, [formData.cartao, formData.cartao_id, formData.data, creditCards]);
 
-  const handleOpenChange = (open: boolean) => {
-    setIsOpen(open);
-    if (!open) resetForm();
-  };
-
   const handleEdit = (transaction: Transaction) => {
     setEditingTransaction(transaction);
-    setFormData({
-      descricao: transaction.descricao,
-      valor: transaction.valor.toString(),
-      data: transaction.data,
-      tipo: transaction.tipo,
-      conta_id: transaction.conta_id,
-      categoria_id: transaction.categoria_id,
-      pago: transaction.pago,
-      cartao: transaction.cartao,
-      cartao_id: transaction.cartao_id || "",
-      fatura_mes: transaction.fatura_mes || "",
-      fixa: transaction.fixa || false,
-      parcelas: "",
-    });
     setIsOpen(true);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    // Identificar qual botão foi clicado
-    const submitter = (e.nativeEvent as SubmitEvent)
-      .submitter as HTMLButtonElement;
-    const action = submitter?.value || "salvar";
-
-    const transactionData = {
-      descricao: formData.descricao,
-      valor: parseFloat(formData.valor) || 0,
-      data: formData.data,
-      tipo: formData.tipo,
-      conta_id: formData.conta_id,
-      categoria_id: formData.categoria_id,
-      pago: formData.pago,
-      cartao: formData.cartao,
-      cartao_id: formData.cartao ? formData.cartao_id || null : null,
-      fatura_mes: formData.cartao ? formData.fatura_mes || null : null,
-      fixa: formData.fixa,
-      parcelas:
-        formData.cartao && formData.parcelas
-          ? parseInt(formData.parcelas)
-          : null,
-    };
-
-    if (editingTransaction) {
-      const success = await updateTransaction(
-        editingTransaction.id,
-        transactionData,
-        action,
-      );
-      if (success) {
-        toast.success("Lançamento atualizado!");
-        handleOpenChange(false);
-      }
-    } else {
-      const result = await addTransaction(transactionData);
-      if (result) {
-        toast.success("Lançamento criado!");
-        handleOpenChange(false);
-      }
-    }
-
-    setIsSubmitting(false);
   };
 
   const handleDeleteClick = (transaction: Transaction) => {
@@ -516,11 +449,21 @@ export default function Transactions() {
 
           <NewTransactionDialog
             isOpen={isOpen}
-            onOpenChange={setIsOpen}
+            onOpenChange={(open) => {
+              setIsOpen(open);
+              if (!open) {
+                setEditingTransaction(null);
+              }
+            }}
             onSubmit={async (data) => {
               const result = await addTransaction(data);
               return !!result;
             }}
+            onUpdate={async (id, data, action) => {
+              const result = await updateTransaction(id, data, action);
+              return !!result;
+            }}
+            editingTransaction={editingTransaction}
             categories={categories}
             accounts={accounts}
             creditCards={creditCards}
@@ -529,10 +472,10 @@ export default function Transactions() {
                 className="fixed bottom-20 right-6 h-14 w-14 rounded-full bg-primary text-white shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center justify-center z-50"
                 title="Novo lançamento"
               >
-                <Plus className="h-8 w-8" />
+                <Plus className="h-6 w-6" />
               </button>
             }
-            showTrigger={false}
+            showTrigger={true}
           />
         </>
       }
