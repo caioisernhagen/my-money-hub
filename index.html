@@ -54,8 +54,13 @@
 
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
+          const swPath =
+            window.location.hostname === "localhost"
+              ? "/service-worker.js"
+              : "/my-money-hub/service-worker.js";
+
           navigator.serviceWorker
-            .register("/service-worker.js")
+            .register(swPath)
             .then((reg) => console.log("SW registrado!", reg))
             .catch((err) => console.log("Erro no SW", err));
         });
