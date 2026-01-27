@@ -60,7 +60,11 @@ export default function CreditCards() {
     cardTransactions.forEach((t) => {
       if (t.fatura_mes) {
         if (!invoices[t.fatura_mes]) invoices[t.fatura_mes] = 0;
-        invoices[t.fatura_mes] += t.valor;
+        //invoices[t.fatura_mes] += t.valor;
+        invoices[t.fatura_mes] =
+          t.tipo === "Despesa"
+            ? invoices[t.fatura_mes] + t.valor
+            : invoices[t.fatura_mes] - t.valor;
       }
     });
 
