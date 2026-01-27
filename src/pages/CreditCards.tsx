@@ -85,12 +85,25 @@ export default function CreditCards() {
     const cardTransactions = transactions.filter(
       (t) => t.cartao_id === cardId && t.fatura_mes === currentMonth,
     );
-    return cardTransactions.reduce((sum, t) => sum + t.valor, 0);
+    const receitas = cardTransactions
+      .filter((t) => t.tipo === "Receita")
+      .reduce((sum, t) => sum + t.valor, 0);
+    const despesas = cardTransactions
+      .filter((t) => t.tipo === "Despesa")
+      .reduce((sum, t) => sum + t.valor, 0);
+    return despesas - receitas;
   };
   // Calcular fatura total
   const getInvoiceTotal = (cardId: string) => {
     const cardTransactions = transactions.filter((t) => t.cartao_id === cardId);
-    return cardTransactions.reduce((sum, t) => sum + t.valor, 0);
+    const receitas = cardTransactions
+      .filter((t) => t.tipo === "Receita")
+      .reduce((sum, t) => sum + t.valor, 0);
+    const despesas = cardTransactions
+      .filter((t) => t.tipo === "Despesa")
+      .reduce((sum, t) => sum + t.valor, 0);
+
+    return despesas - receitas;
   };
 
   const formatCurrency = (value: number) => {

@@ -196,7 +196,14 @@ export function gerarInfoFatura(
     mesFatura,
     cartao.id,
   );
-  const valorTotal = transacoesFatura.reduce((sum, t) => sum + t.valor, 0);
+  const receitas = transacoesFatura
+    .filter((t) => t.tipo === "Receita")
+    .reduce((sum, t) => sum + t.valor, 0);
+  const despesas = transacoesFatura
+    .filter((t) => t.tipo === "Despesa")
+    .reduce((sum, t) => sum + t.valor, 0);
+  const valorTotal = despesas - receitas;
+  //const valorTotal = transacoesFatura.reduce((sum, t) => sum + t.valor, 0);
   const status = calcularStatusFatura(transacoesFatura);
   const dataFechamento = calcularDataFechamento(
     mesFatura,
