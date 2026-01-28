@@ -911,7 +911,7 @@ export default function Transactions() {
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div>
               {transactionsByDate.map((dayData) => (
                 <div key={dayData.date} className="space-y-2">
                   {/* Agrupar por cartão */}
@@ -926,7 +926,7 @@ export default function Transactions() {
                       return (
                         <div
                           key={`${dayData.date}-${cardKey}`}
-                          className="space-y-1"
+                          className="space-y-1 mt-1"
                         >
                           {cardData.transactions.map((transaction) => {
                             const category = categories.find(
@@ -1124,7 +1124,7 @@ export default function Transactions() {
                                         {/* <span className="hidden sm:inline">
                                           •
                                         </span>*/}
-                                        {/* {listProjectedBalance && (
+                                        {/* {!listProjectedBalance && (
                                           <span>
                                             {formatDate(transaction.data)}
                                           </span>
@@ -1201,7 +1201,7 @@ export default function Transactions() {
 
                   {/* Linha de saldo projetado do dia */}
                   {listProjectedBalance && (
-                    <div className="pt-2 border-t border-secondary/30 pl-3">
+                    <div className="pt-2 pb-2 border-t border-secondary/30 pl-3">
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-muted-foreground font-medium">
                           Saldo projetado: {formatDate(dayData.date)}
