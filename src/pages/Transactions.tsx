@@ -46,6 +46,8 @@ import {
   Globe,
   ArrowUp,
   ArrowDown,
+  CircleDollarSign,
+  Ban,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { IconBackground } from "@/components/IconBackground";
@@ -93,6 +95,7 @@ export default function Transactions() {
   const [filters, setFilters] = useState<TransactionFilters>({});
   const [searchTerm, setSearchTerm] = useState("");
   const [isDescending, setIsDescending] = useState(false);
+  const [listProjectedBalance, setListProjectedBalance] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -888,6 +891,16 @@ export default function Transactions() {
               <div className="flex items-center gap-2">
                 {/* <span className="text-xs text-muted-foreground">Data</span> */}
                 <Switch
+                  id="projected-balance"
+                  title="Saldo projetado"
+                  checked={listProjectedBalance}
+                  onCheckedChange={setListProjectedBalance}
+                  iconTrue={
+                    <CircleDollarSign className="h-4 w-4 text-income" />
+                  }
+                  iconFalse={<Ban className="h-4 w-4 text-expense" />}
+                />
+                <Switch
                   id="sort-order"
                   title="Data"
                   checked={isDescending}
@@ -949,10 +962,12 @@ export default function Transactions() {
                                       {category && <span>{category.nome}</span>}
                                       {/* <span className="hidden sm:inline">
                                         •
-                                      </span>
-                                      <span>
-                                        {formatDate(transaction.data)}
-                                      </span> */}
+                                      </span>*/}
+                                      {!listProjectedBalance && (
+                                        <span>
+                                          {formatDate(transaction.data)}
+                                        </span>
+                                      )}
                                     </div>
                                   </div>
                                 </div>
@@ -1050,8 +1065,9 @@ export default function Transactions() {
                                 <span>
                                   {cardData.transactions.length} transação(ões)
                                 </span>
-                                {/* <span className="hidden sm:inline"> •</span>
-                                <span> {formatDate(dayData.date)}</span> */}
+                                {!listProjectedBalance && (
+                                  <span>{formatDate(dayData.date)}</span>
+                                )}
                               </p>
                             </div>
                           </div>
@@ -1107,10 +1123,12 @@ export default function Transactions() {
                                         )}
                                         {/* <span className="hidden sm:inline">
                                           •
-                                        </span>
-                                        <span>
-                                          {formatDate(transaction.data)}
-                                        </span> */}
+                                        </span>*/}
+                                        {/* {listProjectedBalance && (
+                                          <span>
+                                            {formatDate(transaction.data)}
+                                          </span>
+                                        )} */}
                                       </div>
                                     </div>
                                   </div>
@@ -1182,23 +1200,25 @@ export default function Transactions() {
                   })}
 
                   {/* Linha de saldo projetado do dia */}
-                  <div className="pt-2 border-t border-secondary/30 pl-3">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground font-medium">
-                        Saldo projetado: {formatDate(dayData.date)}
-                      </span>
-                      <span
-                        className={cn(
-                          "font-semibold",
-                          dayData.projectedBalance >= 0
-                            ? "text-income"
-                            : "text-expense",
-                        )}
-                      >
-                        {formatCurrency(dayData.projectedBalance)}
-                      </span>
+                  {listProjectedBalance && (
+                    <div className="pt-2 border-t border-secondary/30 pl-3">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground font-medium">
+                          Saldo projetado: {formatDate(dayData.date)}
+                        </span>
+                        <span
+                          className={cn(
+                            "font-semibold",
+                            dayData.projectedBalance >= 0
+                              ? "text-income"
+                              : "text-expense",
+                          )}
+                        >
+                          {formatCurrency(dayData.projectedBalance)}
+                        </span>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               ))}
             </div>
