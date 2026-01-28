@@ -534,7 +534,17 @@ export default function Transactions() {
 
         <div className="flex flex-col gap-3 mb-4">
           {/* Top Bar - Busca, Ordenação e Filtros */}
-          <div className="flex flex-col sm:flex-row gap-2 items-baseline">
+          <div className="flex sm:flex-row gap-2 items-center">
+            {/* Busca com botão interno */}
+            <div className="flex w-full  gap-1 items-center">
+              {/* <Label className="text-xs mb-1 block">Busca por descrição</Label> */}
+              <Input
+                placeholder="Buscar por descrição"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="text-xs"
+              />
+            </div>
             <div className="flex gap-2 items-center">
               {/* Botão Filtros */}
               <Button
@@ -854,27 +864,6 @@ export default function Transactions() {
                   </SelectContent>
                 </Select>
               </div> */}
-              {/* Busca com botão interno */}
-              <div className="relative w-full sm:flex-2">
-                <Label className="text-xs mb-1 block">
-                  Busca por descrição
-                </Label>
-                <Input
-                  // placeholder="Buscar por descrição"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="h-8 text-xs"
-                />
-                {searchTerm && (
-                  <button
-                    onClick={() => setSearchTerm("")}
-                    className="absolute right-4 top-9 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    title="Limpar busca"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
             </div>
           )}
         </div>

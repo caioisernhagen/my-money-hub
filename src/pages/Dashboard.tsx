@@ -127,7 +127,7 @@ export default function Dashboard() {
           selectedDate={selectedDate}
         />
         <StatCard
-          title="Contas a pagar/receber"
+          title="Contas a pagar"
           value={formatCurrency(stats.pendentes)}
           icon={Receipt}
           variant="pending"
