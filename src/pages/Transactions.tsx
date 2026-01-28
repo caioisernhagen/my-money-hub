@@ -925,6 +925,9 @@ export default function Transactions() {
                               <div
                                 key={transaction.id}
                                 className="flex items-center justify-between p-2 rounded-lg bg-secondary/30 hover:bg-secondary/60 transition-colors"
+                                onDoubleClickCapture={() =>
+                                  handleEdit(transaction)
+                                }
                               >
                                 <div className="flex items-center gap-3 flex-1">
                                   <IconBackground
@@ -1078,6 +1081,9 @@ export default function Transactions() {
                                 <div
                                   key={transaction.id}
                                   className="flex items-center justify-between p-2 rounded-lg bg-secondary/20 hover:bg-secondary/60 transition-colors"
+                                  onDoubleClickCapture={() =>
+                                    handleEdit(transaction)
+                                  }
                                 >
                                   <div className="flex items-center gap-2 flex-1">
                                     <IconBackground
