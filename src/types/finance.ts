@@ -67,7 +67,7 @@ export interface TransactionFilters {
   dataInicio?: string;
   dataFim?: string;
   conta_id?: string;
-  categoria_id?: string;
+  categoria_id?: string | string[];
   tipo?: TransactionType;
   pago?: boolean;
   cartao_id?: string;

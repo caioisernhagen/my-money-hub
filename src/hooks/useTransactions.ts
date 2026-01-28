@@ -366,8 +366,13 @@ export function useTransactions() {
         if (filters.dataInicio && date < filters.dataInicio) return false;
         if (filters.dataFim && date > filters.dataFim) return false;
         if (filters.conta_id && t.conta_id !== filters.conta_id) return false;
-        if (filters.categoria_id && t.categoria_id !== filters.categoria_id)
-          return false;
+        if (filters.categoria_id) {
+          if (Array.isArray(filters.categoria_id)) {
+            if (!filters.categoria_id.includes(t.categoria_id)) return false;
+          } else {
+            if (t.categoria_id !== filters.categoria_id) return false;
+          }
+        }
         if (filters.tipo && t.tipo !== filters.tipo) return false;
         if (filters.pago !== undefined && t.pago !== filters.pago) return false;
         if (

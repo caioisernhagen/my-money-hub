@@ -7,17 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 import { NewTransactionDialog } from "@/components/NewTransactionDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -96,6 +95,7 @@ export default function Transactions() {
   const [isDescending, setIsDescending] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   // Processar parâmetros da URL
   useEffect(() => {
@@ -316,6 +316,7 @@ export default function Transactions() {
 
   const clearFilters = () => {
     setSearchTerm("");
+    setSelectedCategories([]);
     setFilters({});
   };
 
@@ -649,40 +650,117 @@ export default function Transactions() {
                 </Select>
               </div>
 
-              {/* Categoria */}
+              {/* Categoria - Multi-seleção com Dropdown */}
               <div>
                 <Label className="text-xs mb-1 block">Categoria</Label>
-                <Select
-                  value={filters.categoria_id || "all"}
-                  onValueChange={(value) =>
-                    setFilters({
-                      ...filters,
-                      categoria_id: value === "all" ? undefined : value,
-                    })
-                  }
-                >
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue placeholder="Todas" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">
-                      <IconBackground
-                        icon="Globe"
-                        color="#45b6fe"
-                        text="Todas"
-                      />
-                    </SelectItem>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full h-8 text-xs justify-start text-muted-foreground"
+                    >
+                      {selectedCategories.length === 0 ? (
                         <IconBackground
-                          icon={category.icone as keyof typeof LucideIcons}
-                          color={category.cor}
-                          text={category.nome}
+                          icon="Globe"
+                          color="#45b6fe"
+                          text="Todas"
                         />
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                      ) : selectedCategories.length === 1 ? (
+                        categories.find((c) => c.id === selectedCategories[0])
+                          ?.nome || "Todas"
+                      ) : (
+                        `${selectedCategories.length} selecionadas`
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56 p-3">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="select-all-categories"
+                          checked={
+                            selectedCategories.length === categories.length
+                          }
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              const allCategoryIds = categories.map(
+                                (c) => c.id,
+                              );
+                              setSelectedCategories(allCategoryIds);
+                              setFilters({
+                                ...filters,
+                                categoria_id: allCategoryIds,
+                              });
+                            } else {
+                              setSelectedCategories([]);
+                              setFilters({
+                                ...filters,
+                                categoria_id: undefined,
+                              });
+                            }
+                          }}
+                        />
+                        <Label
+                          htmlFor="select-all-categories"
+                          className="text-xs font-medium cursor-pointer"
+                        >
+                          <IconBackground
+                            icon="Globe"
+                            color="#45b6fe"
+                            text="Todas"
+                          />
+                        </Label>
+                      </div>
+                      <div className="border-t pt-2">
+                        {categories.map((category) => (
+                          <div
+                            key={category.id}
+                            className="flex items-center gap-2 py-1"
+                          >
+                            <Checkbox
+                              id={`category-${category.id}`}
+                              checked={selectedCategories.includes(category.id)}
+                              onCheckedChange={(checked) => {
+                                let newSelected: string[];
+                                if (checked) {
+                                  newSelected = [
+                                    ...selectedCategories,
+                                    category.id,
+                                  ];
+                                } else {
+                                  newSelected = selectedCategories.filter(
+                                    (id) => id !== category.id,
+                                  );
+                                }
+                                setSelectedCategories(newSelected);
+                                setFilters({
+                                  ...filters,
+                                  categoria_id:
+                                    newSelected.length > 0
+                                      ? newSelected
+                                      : undefined,
+                                });
+                              }}
+                            />
+                            <Label
+                              htmlFor={`category-${category.id}`}
+                              className="text-xs cursor-pointer flex items-center gap-2 flex-1"
+                            >
+                              <IconBackground
+                                icon={
+                                  category.icone as keyof typeof LucideIcons
+                                }
+                                color={category.cor}
+                                text=""
+                              />
+                              {category.nome}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               {/* Status */}
