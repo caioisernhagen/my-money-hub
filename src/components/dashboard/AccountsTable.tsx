@@ -7,6 +7,8 @@ import {
   DollarSign,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
 
 const accountIcons = {
   Corrente: Landmark,
@@ -17,8 +19,14 @@ const accountIcons = {
 };
 
 export function AccountsTable() {
-  const { accounts, getAccountBalance } = useFinance();
+  const navigate = useNavigate();
+  function handleClick(conta_id: string) {
+    navigate(
+      `/lancamentos?conta_id=${conta_id}&mes=${format(new Date(), "yyyy-MM-dd")}`,
+    );
+  }
 
+  const { accounts, getAccountBalance } = useFinance();
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -50,6 +58,7 @@ export function AccountsTable() {
 
           return (
             <div
+              onClick={() => handleClick(account.id)}
               key={account.id}
               className="flex items-center justify-between p-2.5 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
             >

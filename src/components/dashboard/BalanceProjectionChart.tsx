@@ -12,65 +12,94 @@ import {
 import { useFinance } from "@/contexts/FinanceContext";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { getMonthlyDataForPeriod } from "@/lib/mockData";
+import { getMonthlyDataForPeriod, getDataForYear } from "@/lib/mockData";
 import { ptBR } from "date-fns/locale";
 import { format } from "date-fns";
 
 interface ProjectionData {
   mes: string;
-  saldo: number;
-  isProjected: boolean;
+  [key: string]: string | number;
 }
+
+const ACCOUNT_COLORS = [
+  "hsl(var(--primary))",
+  "hsl(var(--destructive))",
+  "hsl(142, 71%, 45%)", // green
+  "hsl(38, 92%, 50%)", // amber
+  "hsl(262, 80%, 50%)", // violet
+  "hsl(220, 90%, 56%)", // blue
+  "hsl(16, 100%, 50%)", // orange
+];
 
 export function BalanceProjectionChart() {
   const { transactions, accounts } = useFinance();
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
+  const activeAccounts = accounts.filter((t) => t.ativo);
+
   const data = useMemo(() => {
-    const months = [];
-    let saldo = accounts
-      .filter((t) => t.ativo)
-      .reduce((sum, t) => sum + t.saldo_inicial, 0);
+    const months: ProjectionData[] = [];
+
+    // Inicializar saldos das contas
+    const accountBalances: { [key: string]: number } = {};
+    activeAccounts.forEach((account) => {
+      accountBalances[account.id] = account.saldo_inicial;
+    });
 
     const startYear = Math.min(currentYear, new Date().getFullYear());
 
     // Se está vendo um ano anterior, somar transações desde o início até o final do ano anterior
     if (currentYear > new Date().getFullYear()) {
       for (let year = startYear; year < currentYear; year++) {
-        for (let month = 0; month < 12; month++) {
-          const monthData = getMonthlyDataForPeriod(transactions, year, month);
-          saldo += monthData.receitas - monthData.despesas;
-        }
+        activeAccounts.forEach((account) => {
+          const monthData = getDataForYear(transactions, year, account.id);
+          const netAmount = monthData.receitas - monthData.despesas;
+          accountBalances[account.id] += netAmount;
+        });
       }
-    } else if (currentYear === new Date().getFullYear()) {
-      // Se é o ano atual, somar transações até agora
-      const hoje = new Date();
-      for (let month = 0; month < hoje.getMonth(); month++) {
+    }
+    // } else if (currentYear === new Date().getFullYear()) {
+    //   // Se é o ano atual, somar transações até agora
+    //   const hoje = new Date();
+    //   for (let month = 0; month < hoje.getMonth(); month++) {
+    //     const monthData = getMonthlyDataForPeriod(
+    //       transactions,
+    //       currentYear,
+    //       month,
+    //       account.id,
+    //     );
+    //     const netAmount = monthData.receitas - monthData.despesas;
+    //     activeAccounts.forEach((account) => {
+    //       accountBalances[account.id] += netAmount; // / activeAccounts.length;
+    //     });
+    //   }
+    // }
+
+    // Projetar os 12 meses do currentYear
+    for (let month = 0; month < 12; month++) {
+      const date = new Date(currentYear, month, 1);
+      const monthEntry: ProjectionData = {
+        mes: format(date, "MMM/yy", { locale: ptBR }),
+      };
+
+      activeAccounts.forEach((account) => {
         const monthData = getMonthlyDataForPeriod(
           transactions,
           currentYear,
           month,
+          account.id,
         );
-        saldo += monthData.receitas - monthData.despesas;
-      }
+
+        const netAmount = monthData.receitas - monthData.despesas;
+        accountBalances[account.id] += netAmount;
+        monthEntry[account.id] = accountBalances[account.id];
+      });
+
+      months.push(monthEntry);
     }
 
-    // Projetar os 12 meses do currentYear
-    for (let month = 0; month < 12; month++) {
-      const monthData = getMonthlyDataForPeriod(
-        transactions,
-        currentYear,
-        month,
-      );
-      saldo += monthData.receitas - monthData.despesas;
-      const date = new Date(currentYear, month, 1);
-      months.push({
-        mes: format(date, "MMM/yy", { locale: ptBR }),
-        saldo: saldo,
-      });
-    }
     return months;
-  }, [transactions, currentYear, accounts]);
+  }, [transactions, currentYear, activeAccounts]);
 
   const handlePrev = () => setCurrentYear((prev) => prev - 1);
   const handleNext = () => setCurrentYear((prev) => prev + 1);
@@ -123,18 +152,27 @@ export function BalanceProjectionChart() {
           margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
         >
           <defs>
-            <linearGradient id="saldoGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop
-                offset="5%"
-                stopColor="hsl(var(--primary))"
-                stopOpacity={0.3}
-              />
-              <stop
-                offset="95%"
-                stopColor="hsl(var(--primary))"
-                stopOpacity={0}
-              />
-            </linearGradient>
+            {activeAccounts.map((account, index) => (
+              <linearGradient
+                key={`gradient-${account.nome}`}
+                id={`gradient-${account.id}`}
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="1"
+              >
+                <stop
+                  offset="5%"
+                  stopColor={ACCOUNT_COLORS[index % ACCOUNT_COLORS.length]}
+                  stopOpacity={0.3}
+                />
+                <stop
+                  offset="95%"
+                  stopColor={ACCOUNT_COLORS[index % ACCOUNT_COLORS.length]}
+                  stopOpacity={0}
+                />
+              </linearGradient>
+            ))}
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis
@@ -148,10 +186,10 @@ export function BalanceProjectionChart() {
             axisLine={{ stroke: "hsl(var(--border))" }}
           />
           <Tooltip
-            formatter={(value: number, name: string, props: any) => [
-              formatCurrency(value),
-              !props.payload.isProjected ? "Saldo Projetado" : "Saldo Real",
-            ]}
+            formatter={(value: number, name: string) => {
+              const account = activeAccounts.find((acc) => acc.id === name);
+              return [formatCurrency(value), account?.nome || name];
+            }}
             contentStyle={{
               backgroundColor: "hsl(var(--card))",
               border: "1px solid hsl(var(--border))",
@@ -165,35 +203,17 @@ export function BalanceProjectionChart() {
             stroke="hsl(var(--destructive))"
             strokeDasharray="5 5"
           />
-          <Area
-            type="monotone"
-            dataKey="saldo"
-            stroke="hsl(var(--primary))"
-            strokeWidth={2}
-            fill="url(#saldoGradient)"
-            dot={(props: any) => {
-              const { cx, cy, payload } = props;
-              return (
-                <circle
-                  cx={cx}
-                  cy={cy}
-                  r={4}
-                  fill={
-                    payload.isProjected
-                      ? "hsl(var(--muted-foreground))"
-                      : "hsl(var(--primary))"
-                  }
-                  stroke={
-                    payload.isProjected
-                      ? "hsl(var(--border))"
-                      : "hsl(var(--primary))"
-                  }
-                  strokeWidth={2}
-                  strokeDasharray={payload.isProjected ? "2 2" : "0"}
-                />
-              );
-            }}
-          />
+          {activeAccounts.map((account, index) => (
+            <Area
+              key={account.nome}
+              type="monotone"
+              dataKey={account.id}
+              stroke={ACCOUNT_COLORS[index % ACCOUNT_COLORS.length]}
+              fill={`url(#gradient-${account.id})`}
+              strokeWidth={2}
+              isAnimationActive={false}
+            />
+          ))}
         </AreaChart>
       </ResponsiveContainer>
     </div>

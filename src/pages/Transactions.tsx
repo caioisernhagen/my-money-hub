@@ -102,7 +102,14 @@ export default function Transactions() {
     const tipo = searchParams.get("tipo");
     const mes = searchParams.get("mes");
     const status = searchParams.get("status");
+    const conta_id = searchParams.get("conta_id");
 
+    if (conta_id) {
+      setFilters((prev) => ({
+        ...prev,
+        conta_id: conta_id,
+      }));
+    }
     if (tipo && (tipo === "receita" || tipo === "despesa")) {
       setFilters((prev) => ({
         ...prev,
@@ -110,7 +117,6 @@ export default function Transactions() {
       }));
     }
     if (status && (status === "pendente" || status === "pago")) {
-      console.log("Ajustando status para:", status);
       setFilters((prev) => ({
         ...prev,
         pago: status === "pendente" ? false : true,

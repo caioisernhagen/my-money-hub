@@ -28,10 +28,10 @@ export function StatCard({
 }: StatCardProps) {
   const navigate = useNavigate();
   function handleClick() {
-    if (variant === "income" && title !== "Saldo Mensal") {
+    if (variant === "income" && title !== "Resultado do mês") {
       const mesAno = selectedDate ? format(selectedDate, "yyyy-MM") : "";
       navigate(`/lancamentos?tipo=receita&mes=${mesAno}`);
-    } else if (variant === "expense" && title !== "Saldo Mensal") {
+    } else if (variant === "expense" && title !== "Resultado do mês") {
       const mesAno = selectedDate ? format(selectedDate, "yyyy-MM") : "";
       navigate(`/lancamentos?tipo=despesa&mes=${mesAno}`);
     } else if (variant === "pending") {

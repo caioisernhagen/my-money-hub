@@ -169,26 +169,48 @@ export const mockCreditCards: CreditCard[] = [
   },
 ];
 
-export function calculateAccountBalance(
-  account: Account,
+// export function calculateAccountBalance(
+//   account: Account,
+//   transactions: Transaction[],
+// ): number {
+//   const accountTransactions = transactions.filter(
+//     (t) => t.conta_id === account.id && t.pago,
+//   );
+//   const receitas = accountTransactions
+//     .filter((t) => t.tipo === "Receita")
+//     .reduce((sum, t) => sum + t.valor, 0);
+//   const despesas = accountTransactions
+//     .filter((t) => t.tipo === "Despesa")
+//     .reduce((sum, t) => sum + t.valor, 0);
+//   return account.saldo_inicial + receitas - despesas;
+// }
+export function getDataForYear(
   transactions: Transaction[],
-): number {
-  const accountTransactions = transactions.filter(
-    (t) => t.conta_id === account.id && t.pago,
-  );
-  const receitas = accountTransactions
+  year: number,
+  conta_id?: string,
+): { receitas: number; despesas: number } {
+  const yearTransactions = transactions.filter((t) => {
+    const date =
+      t.cartao && t.fatura_mes
+        ? new Date(t.fatura_mes + "-01T12:00:00").getFullYear()
+        : new Date(t.data + "T12:00:00").getFullYear();
+    return date === year && (!conta_id || t.conta_id === conta_id);
+  });
+  const receitas = yearTransactions
     .filter((t) => t.tipo === "Receita")
     .reduce((sum, t) => sum + t.valor, 0);
-  const despesas = accountTransactions
+
+  const despesas = yearTransactions
     .filter((t) => t.tipo === "Despesa")
     .reduce((sum, t) => sum + t.valor, 0);
-  return account.saldo_inicial + receitas - despesas;
-}
 
+  return { receitas, despesas };
+}
 export function getMonthlyDataForPeriod(
   transactions: Transaction[],
   year: number,
   month: number,
+  conta_id?: string,
 ): { receitas: number; despesas: number } {
   const monthStart = startOfMonth(new Date(year, month));
   const monthEnd = endOfMonth(new Date(year, month));
@@ -198,9 +220,12 @@ export function getMonthlyDataForPeriod(
       t.cartao && t.fatura_mes
         ? new Date(t.fatura_mes + "-01T12:00:00")
         : new Date(t.data + "T12:00:00");
-    return date >= monthStart && date <= monthEnd;
+    return (
+      date >= monthStart &&
+      date <= monthEnd &&
+      (!conta_id || t.conta_id === conta_id)
+    );
   });
-
   const receitas = monthTransactions
     .filter((t) => t.tipo === "Receita")
     .reduce((sum, t) => sum + t.valor, 0);

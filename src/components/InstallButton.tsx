@@ -30,7 +30,7 @@ export default function InstallButton() {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      console.log("✓ Evento beforeinstallprompt capturado");
+      //console.log("✓ Evento beforeinstallprompt capturado");
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);

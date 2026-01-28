@@ -283,34 +283,32 @@ export function NewTransactionDialog({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="valor">Valor</Label>
-              <Input
-                id="valor"
-                step="0.01"
-                value={formData.valor}
-                onChange={(e) =>
-                  setFormData({ ...formData, valor: e.target.value })
-                }
-                onBlur={handleValorBlur}
-                placeholder="0,00"
-                required
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="valor">Valor</Label>
+            <Input
+              id="valor"
+              step="0.01"
+              value={formData.valor}
+              onChange={(e) =>
+                setFormData({ ...formData, valor: e.target.value })
+              }
+              onBlur={handleValorBlur}
+              placeholder="0,00"
+              required
+            />
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="data">Data</Label>
-              <Input
-                id="data"
-                type="date"
-                value={formData.data}
-                onChange={(e) =>
-                  setFormData({ ...formData, data: e.target.value })
-                }
-                required
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="data">Data</Label>
+            <Input
+              id="data"
+              type="date"
+              value={formData.data}
+              onChange={(e) =>
+                setFormData({ ...formData, data: e.target.value })
+              }
+              required
+            />
           </div>
 
           <div className="space-y-2">
